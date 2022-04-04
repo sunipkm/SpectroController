@@ -108,7 +108,7 @@ int main()
         dbprintlf("In error state");
     }
     printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
-
+    scanmot_current_pos += smotor.posDelta(1000, Adafruit::MotorDir::FORWARD);
     return 0;
 }
 
