@@ -67,7 +67,7 @@ int main()
     MotorSetup();
     bprintlf(YELLOW_FG "Current pos: %u == %.2f", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     if (smotor != nullptr)
-        scanmot_current_pos = smotor->goToPos(scanmot_current_pos + 200);
+        scanmot_current_pos = smotor->goToPos(scanmot_current_pos + 1000);
     else
         bprintlf(RED_FG "Motor pointer is null");
     return 0;
