@@ -1,0 +1,165 @@
+/**
+ * @file scanmotor.hpp
+ * @author Sunip K. Mukherjee (sunipkmukherjee@gmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2022-03-16
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
+#ifndef __SCANMOTOR_HPP__
+#define __SCANMOTOR_HPP__
+
+#include "gpiodev/gpiodev.h"
+#include "Adafruit/meb_print.h"
+#include "Adafruit/MotorShield.hpp"
+#include <stdint.h>
+
+typedef enum : uint8_t
+{
+    OK = 0,
+    LS1 = 1,
+    LS2 = 2,
+    ERROR = 3
+} ScanMotor_State;
+
+class ScanMotor
+{
+private:
+    int ls1;                     // limit sw 1
+    int ls2;                     // limit sw 2
+    Adafruit::MotorDir dir1;     // limit sw 1 dir
+    Adafruit::MotorDir dir2;     // limit sw 2 dir
+    ScanMotor_State state;       // scan motor state
+    int absPos;                  // absolute position
+    volatile bool moving;        // move indicator
+    Adafruit::StepperMotor *mot; // stepper motor
+
+public:
+    ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 10000)
+    {
+        if (mot == NULL || mot == nullptr)
+            throw std::runtime_error("Stepper motor pointer can not be null.");
+        this->mot = mot;
+        this->ls1 = LimitSW1;
+        this->ls2 = LimitSW2;
+        if (ls1 == ls2 || ls1 < 0 || ls2 < 0)
+        {
+            throw std::runtime_error("Limit switch invalid");
+        }
+        if (dir1 == dir2)
+        {
+            throw std::runtime_error("Limit switches can not be in the same direction.");
+        }
+        if (dir1 == Adafruit::MotorDir::BRAKE || dir1 == Adafruit::MotorDir::RELEASE)
+        {
+            throw std::runtime_error("Limit switch 1 direction is not forward or backward.");
+        }
+        if (dir2 == Adafruit::MotorDir::BRAKE || dir2 == Adafruit::MotorDir::RELEASE)
+        {
+            throw std::runtime_error("Limit switch 2 direction is not forward or backward.");
+        }
+        this->dir1 = dir1;
+        this->dir2 = dir2;
+        if (gpioSetMode(ls1, GPIO_IN) < 0)
+        {
+            throw std::runtime_error("Could not set pin " + std::to_string(ls1) + " as input pin.");
+        }
+        if (gpioSetPullUpDown(ls1, GPIO_PUD_UP) < 0)
+        {
+            throw std::runtime_error("Could not set pull up on pin " + std::to_string(ls1));
+        }
+        if (gpioSetMode(ls2, GPIO_IN) < 0)
+        {
+            throw std::runtime_error("Could not set pin " + std::to_string(ls2) + " as input pin.");
+        }
+        if (gpioSetPullUpDown(ls2, GPIO_PUD_UP) < 0)
+        {
+            throw std::runtime_error("Could not set pull up on pin " + std::to_string(ls2));
+        }
+        gpioToState();
+        if (state == ScanMotor_State::ERROR)
+        {
+            throw std::runtime_error("Both limit switches closed, indicates wiring error.");
+        }
+    }
+
+    int goToPos(int target)
+    {
+        Adafruit::MotorDir dir = Adafruit::MotorDir::RELEASE;
+        if (target <= 0)
+            dbprintlf("Target position %d, invalid.", target);
+        if (target > absPos)
+            dir = dir2; // towards SW2
+        else if (target < absPos)
+            dir = dir1; // towards SW1
+        else
+            return absPos;
+        int steps = abs(target - absPos);
+        int nsteps = posDelta(steps, dir);
+        if (target > absPos)
+        {
+            absPos += nsteps;
+        }
+        else
+            target -= nsteps;
+        return absPos;
+    }
+
+    int posDelta(int steps, Adafruit::MotorDir dir, Adafruit::MotorStyle style = Adafruit::MotorStyle::DOUBLE)
+    {
+        int nsteps = steps;
+        if (nsteps <= 0)
+            return 0;
+        gpioToState();
+        moving = true;
+        while (state == ScanMotor_State::OK && nsteps-- && moving)
+        {
+            mot->onestep(dir, style);
+            gpioToState();
+        }
+        moving = false;
+        return (steps - nsteps);
+    }
+
+    void eStop()
+    {
+        moving = false;
+    }
+
+    bool isMoving() const
+    {
+        return moving;
+    }
+
+private:
+    void gpioToState()
+    {
+        int st_ls1 = gpioRead(ls1);
+        int st_ls2 = gpioRead(ls2);
+        if (st_ls1 == GPIO_HIGH && st_ls2 == GPIO_HIGH) // both switches closed, impossible, error!
+        {
+            state = ScanMotor_State::ERROR;
+            return;
+        }
+        if (st_ls1 == GPIO_LOW && st_ls2 == GPIO_LOW) // both switches open, intermediate position
+        {
+            state = ScanMotor_State::OK;
+            return;
+        }
+        if (st_ls1 == GPIO_HIGH && st_ls2 == GPIO_LOW) // LS1 closed, LS2 open
+        {
+            state = ScanMotor_State::LS1;
+            return;
+        }
+        if (st_ls1 == GPIO_LOW && st_ls2 == GPIO_HIGH) // LS2 closed, LS1 open
+        {
+            state = ScanMotor_State::LS2;
+            return;
+        }
+    }
+};
+
+#endif

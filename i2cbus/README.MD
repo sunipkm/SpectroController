@@ -1,0 +1,2 @@
+# Simplified API for I2C Comm on Linux
+This library wraps `open()`, `ioctl()`, `read()`, `write()` and `close()` calls used for I2C communication on Linux with simpler `i2cbus_*` methods. The API also provides mutex protection to bus access for multithreaded use. Requires `gcc` and `-std=gnu11` for compilation.

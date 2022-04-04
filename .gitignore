@@ -1,0 +1,6 @@
+**/.vscode
+**/*.o
+**/*.out
+**/.DS_Store
+**/doc
+**/.gh-pages
