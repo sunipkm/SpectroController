@@ -101,6 +101,11 @@ public:
         this->absPos = absPos;
     }
 
+    ~ScanMotor()
+    {
+        bprintlf(BLUE_FG "Called");
+    }
+
     inline int getPos() const { return absPos; }
 
     int goToPos(int target)

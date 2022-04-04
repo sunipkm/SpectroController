@@ -24,12 +24,12 @@
 /**
  * @brief Wrapper to print a string to stderr with printf like arg support. Prepends provided string with the function from which it is called
  * and line number by default, and appends a newline.
- * 
+ *
  */
-#define eprintf(str, ...)                                                        \
-    {                                                                            \
+#define eprintf(str, ...)                                                                       \
+    {                                                                                           \
         fprintf(stderr, "[%s/%s():%d] " str "\n", __FILE__, __func__, __LINE__, ##__VA_ARGS__); \
-        fflush(stderr);                                                          \
+        fflush(stderr);                                                                         \
     }
 
 static gpioprops gpio_props_dev;                    /// Memory allocation for the GPIO properties struct
@@ -732,12 +732,11 @@ void gpioDestroy(void)
                 if (gpio_pins_init.mode[i] >= 0) // pin was initialized before
                 {
                     gpioSetMode(i, gpio_pins_init.mode[i]);
-                    if (gpioWrite(i, gpio_pins_init.val[i]))
-                        eprintf("GPIOWrite error");
+                    if (gpio_pins_init.mode[i] == GPIO_OUT)
+                        gpioWrite(i, gpio_pins_init.val[i]);
                 }
                 else if (gpio_props_dev.mode[i] == GPIO_OUT) // set pin to low if pin is output and was not initialized
-                    if (gpioWrite(i, GPIO_LOW))
-                        eprintf("GPIOWrite error");
+                    gpioWrite(i, GPIO_LOW);
                 close(gpio_props_dev.fd_val[i]);
                 close(gpio_props_dev.fd_mode[i]);
                 if (gpio_pins_init.mode[i] < 0) // pin was not initialized before
