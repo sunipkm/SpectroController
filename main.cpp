@@ -107,15 +107,15 @@ int main()
     }
     else if (smotor.getState() == ScanMotor_State::ERROR)
     {
-        dbprintlf("")
+        dbprintlf("In error state");
     }
     printf("Press any key to continue...");
     getchar();
-    while (smotor.getState() == ScanMotor_State::OK)
-    {
-        scanmot_current_pos -= smotor.posDelta(200, Adafruit::MotorDir::BACKWARD);
-    }
-    printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
+    // while (smotor.getState() == ScanMotor_State::OK)
+    // {
+    //     scanmot_current_pos -= smotor.posDelta(200, Adafruit::MotorDir::BACKWARD);
+    // }
+    // printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
 
     return 0;
 }
