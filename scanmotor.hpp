@@ -25,7 +25,7 @@ enum class ScanMotor_State: uint8_t
     ERROR = 3
 };
 
-typedef void (*voidptr_t)();
+typedef void (*voidfptr_t)();
 
 class ScanMotor
 {
@@ -38,10 +38,10 @@ private:
     int absPos;                  // absolute position
     volatile bool moving;        // move indicator
     Adafruit::StepperMotor *mot; // stepper motor
-    voidptr_t invalidFn; // invalidate current position
+    voidfptr_t invalidFn; // invalidate current position
 
 public:
-    ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 10000, voidptr_t _invalidFn = NULL)
+    ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 10000, voidfptr_t _invalidFn = NULL)
     {
         if (mot == NULL || mot == nullptr)
             throw std::runtime_error("Stepper motor pointer can not be null.");

@@ -228,7 +228,6 @@ static unsigned int LoadCurrentPos()
 
 static void InvalidateCurrentPos()
 {
-    dbprintlf("Called!");
     static bool firstRun = true;
     if (firstRun)
     {
