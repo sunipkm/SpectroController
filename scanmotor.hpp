@@ -108,15 +108,17 @@ public:
         return absPos;
     }
 
-    int posDelta(int steps, Adafruit::MotorDir dir, Adafruit::MotorStyle style = Adafruit::MotorStyle::DOUBLE)
+    int posDelta(int steps, Adafruit::MotorDir dir, bool override = false, Adafruit::MotorStyle style = Adafruit::MotorStyle::DOUBLE)
     {
         int nsteps = steps;
         if (nsteps <= 0)
             return 0;
         gpioToState();
         moving = true;
-        while (state == ScanMotor_State::OK && moving)
+        while (moving)
         {
+            if (!override && state != ScanMotor_State::OK)
+                break;
             nsteps--;
             mot->onestep(dir, style);
             gpioToState();

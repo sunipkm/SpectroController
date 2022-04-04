@@ -90,7 +90,8 @@ int main()
     {
         while (smotor.getState() != ScanMotor_State::OK)
         {
-            scanmot_current_pos += smotor.posDelta(1, Adafruit::MotorDir::FORWARD);
+            dbprintlf("Motor state: %d", (int) smotor.getState());
+            scanmot_current_pos += smotor.posDelta(1, Adafruit::MotorDir::FORWARD, true);
         }
         printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
         int step = 1, pd;
