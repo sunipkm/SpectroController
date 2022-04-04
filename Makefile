@@ -8,7 +8,7 @@ EDLDFLAGS= -lm -lpthread $(LDFLAGS)
 
 CPPOBJS=Adafruit/MotorShield.o
 # MOTORSHIELDTEST=examples/motorshield.o
-MOTORSHIELDTEST=test.o
+MOTORSHIELDTEST=main.o
 
 LIBCLKGEN = clkgen/libclkgen.a
 

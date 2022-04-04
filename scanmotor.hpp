@@ -17,13 +17,13 @@
 #include "Adafruit/MotorShield.hpp"
 #include <stdint.h>
 
-typedef enum : uint8_t
+enum class ScanMotor_State: uint8_t
 {
     OK = 0,
     LS1 = 1,
     LS2 = 2,
     ERROR = 3
-} ScanMotor_State;
+};
 
 class ScanMotor
 {
@@ -122,6 +122,11 @@ public:
         }
         moving = false;
         return (steps - nsteps);
+    }
+
+    ScanMotor_State getState()
+    {
+        return state;
     }
 
     void eStop()

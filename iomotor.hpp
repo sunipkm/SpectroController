@@ -17,14 +17,13 @@
 #include "Adafruit/meb_print.h"
 #include <stdint.h>
 #include <unistd.h>
-
-typedef enum : uint8_t
+enum class IOMotor_State: uint8_t
 {
     MOVING = 0,
     PORTA = 1,
     PORTB = 2,
     ERROR = 3
-} IOMotor_State;
+};
 
 class IOMotor
 {
@@ -89,7 +88,7 @@ public:
                 else if (state == IOMotor_State::MOVING)
                     motorst = "Moving";
                 else
-                    motorst = "Unknown " + std::to_string(state) + ".";
+                    motorst = "Unknown " + std::to_string((int) state) + ".";
                 throw std::runtime_error("Expected state PORT A, but current state " + motorst);
             }
         }
