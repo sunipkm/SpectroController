@@ -115,8 +115,10 @@ public:
             return 0;
         gpioToState();
         moving = true;
-        while (state == ScanMotor_State::OK && nsteps-- && moving)
+        while (state == ScanMotor_State::OK && moving)
         {
+            if (!(nsteps--))
+                break;
             mot->onestep(dir, style);
             gpioToState();
         }
