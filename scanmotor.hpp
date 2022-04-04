@@ -17,7 +17,7 @@
 #include "Adafruit/MotorShield.hpp"
 #include <stdint.h>
 
-enum class ScanMotor_State: uint8_t
+enum class ScanMotor_State : uint8_t
 {
     OK = 0,
     LS1 = 1,
@@ -45,7 +45,7 @@ private:
     int absPos;                  // absolute position
     volatile bool moving;        // move indicator
     Adafruit::StepperMotor *mot; // stepper motor
-    voidfptr_t invalidFn; // invalidate current position
+    voidfptr_t invalidFn;        // invalidate current position
     volatile sig_atomic_t *done;
 
 public:
@@ -98,7 +98,10 @@ public:
             throw std::runtime_error("Both limit switches closed, indicates wiring error.");
         }
         invalidFn = _invalidFn;
+        this->absPos = absPos;
     }
+
+    inline int getPos() const { return absPos; }
 
     int goToPos(int target)
     {
@@ -129,7 +132,6 @@ public:
             return 0;
         gpioToState();
         moving = true;
-        dbprintlf("Done: %d", *done);
         while (moving && !(*done))
         {
             if (!override && state != ScanMotor_State::OK)

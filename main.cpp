@@ -53,7 +53,24 @@ static unsigned int LoadCurrentPos();
 static void InvalidateCurrentPos();
 static void ValidateCurrentPos();
 
+#define STEP_TO_CTR(x) (((double) x) / 250.0)
+#define CTR_TO_STEP(x) (x * 250)
+
+ScanMotor *smotor = nullptr;
+IOMotor *iomot_out = nullptr;
+IOMotor *iomot_in = nullptr;
+
+static void MotorSetup();
+
 int main()
+{
+    
+    MotorSetup();
+    smotor->goToPos(scanmot_current_pos + 200);
+    return 0;
+}
+
+static void MotorSetup()
 {
     // Instantiation.
     atexit(ValidateCurrentPos); // validate current position at exit
@@ -82,34 +99,33 @@ int main()
     Adafruit::StepperMotor *iostepper_out = io_shield.getStepper(IOMOT_REVS, IOMOT_A_PORT);
     Adafruit::StepperMotor *iostepper_in = io_shield.getStepper(IOMOT_REVS, IOMOT_B_PORT);
 
-    ScanMotor smotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos);
-    IOMotor iomot_out(iostepper_out, IOMOT_A_LS1, IOMOT_A_LS2, true);
-    IOMotor iomot_in(iostepper_in, IOMOT_B_LS1, IOMOT_B_LS2, true);
+    smotor = new ScanMotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos);
+    iomot_out = new IOMotor(iostepper_out, IOMOT_A_LS1, IOMOT_A_LS2, true);
+    iomot_in = new IOMotor(iostepper_in, IOMOT_B_LS1, IOMOT_B_LS2, true);
 
-    printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
-    if (smotor.getState() == ScanMotor_State::LS1)
+    bprintlf(GREEN_FG "Current pos: %u == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
+    if (smotor->getState() == ScanMotor_State::LS1)
     {
-        while (smotor.getState() != ScanMotor_State::OK)
+        while (smotor->getState() != ScanMotor_State::OK)
         {
-            scanmot_current_pos += smotor.posDelta(1, Adafruit::MotorDir::FORWARD, true);
+            scanmot_current_pos += smotor->posDelta(1, Adafruit::MotorDir::FORWARD, true);
         }
-        scanmot_current_pos += smotor.posDelta(200, Adafruit::MotorDir::FORWARD);
+        scanmot_current_pos += smotor->posDelta(200, Adafruit::MotorDir::FORWARD);
     }
-    else if (smotor.getState() == ScanMotor_State::LS2)
+    else if (smotor->getState() == ScanMotor_State::LS2)
     {
-        while (smotor.getState() != ScanMotor_State::OK)
+        while (smotor->getState() != ScanMotor_State::OK)
         {
-            scanmot_current_pos += smotor.posDelta(1, Adafruit::MotorDir::BACKWARD, true);
+            scanmot_current_pos += smotor->posDelta(1, Adafruit::MotorDir::BACKWARD, true);
         }
-        scanmot_current_pos += smotor.posDelta(200, Adafruit::MotorDir::BACKWARD);
+        scanmot_current_pos += smotor->posDelta(200, Adafruit::MotorDir::BACKWARD);
     }
-    else if (smotor.getState() == ScanMotor_State::ERROR)
+    else if (smotor->getState() == ScanMotor_State::ERROR)
     {
-        dbprintlf("In error state");
+        dbprintlf("In error state, check wiring.");
+        exit(0);
     }
-    printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
-    scanmot_current_pos += smotor.posDelta(1000, Adafruit::MotorDir::FORWARD);
-    return 0;
+    bprintlf(GREEN_FG "Setup complete, current pos: %u == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
 }
 
 static unsigned int LoadCurrentPos()
@@ -120,7 +136,7 @@ static unsigned int LoadCurrentPos()
     if (fd < 0)
     {
         bool valid = false;
-        float readout;
+        double readout;
         char buf[50];
         do
         {
@@ -150,7 +166,7 @@ static unsigned int LoadCurrentPos()
                     bprintlf("Value %.3f invalid.", readout);
                     continue;
                 }
-                current_pos = readout * 250;
+                current_pos = CTR_TO_STEP(readout);
                 valid = true;
             }
         } while (!valid);
@@ -296,6 +312,6 @@ static void ValidateCurrentPos()
         return;
     }
     close(fd);
-    dbprintlf("Final position: %u == %.2f", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
+    bprintlf(GREEN_FG "Final position: %u == %.2f", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
     return;
 }
