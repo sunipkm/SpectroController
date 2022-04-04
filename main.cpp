@@ -52,10 +52,12 @@ const char *pos_fname = (char *)"posinfo.bin";
 static unsigned int LoadCurrentPos();
 static void InvalidateCurrentPos();
 static void ValidateCurrentPos();
+static void MotorCleanup();
 
 #define STEP_TO_CTR(x) (((double) x) / 250.0)
 #define CTR_TO_STEP(x) (x * 250)
 
+Adafruit::MotorShield *sm_shield = nullptr;
 ScanMotor *smotor = nullptr;
 IOMotor *iomot_out = nullptr;
 IOMotor *iomot_in = nullptr;
@@ -64,13 +66,22 @@ static void MotorSetup();
 
 int main()
 {
+    atexit(MotorCleanup);
     MotorSetup();
     bprintlf(YELLOW_FG "Current pos: %u == %.2f", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     if (smotor != nullptr)
-        scanmot_current_pos = smotor->posDelta(1000, Adafruit::MotorDir::FORWARD);
+        scanmot_current_pos = smotor->goToPos(scanmot_current_pos + 1000);
     else
         bprintlf(RED_FG "Motor pointer is null");
     return 0;
+}
+
+static void MotorCleanup()
+{
+    delete smotor;
+    delete iomot_out;
+    delete iomot_in;
+    delete sm_shield;
 }
 
 static void MotorSetup()
@@ -79,16 +90,16 @@ static void MotorSetup()
     atexit(ValidateCurrentPos); // validate current position at exit
     scanmot_current_pos = LoadCurrentPos();
     // dbprintlf("Instantiating MotorShield and StepperMotor with address %d, bus %d, %d steps, and port %d.", MSHIELD_ADDR, MSHIELD_BUS, M_STEPS, M_PORT);
-    Adafruit::MotorShield sm_shield(SMSHIELD_ADDR, MSHIELD_BUS);
+    sm_shield = new Adafruit::MotorShield(SMSHIELD_ADDR, MSHIELD_BUS);
     try
     {
-        sm_shield.begin();
+        sm_shield->begin();
     }
     catch (std::exception &e)
     {
         dbprintlf("Exception: %s.", e.what());
     }
-    Adafruit::StepperMotor *scanstepper = sm_shield.getStepper(SMOT_REVS, SMOT_PORT);
+    Adafruit::StepperMotor *scanstepper = sm_shield->getStepper(SMOT_REVS, SMOT_PORT);
 
     Adafruit::MotorShield io_shield(IOMSHIELD_ADDR, MSHIELD_BUS);
     try
