@@ -129,6 +129,7 @@ public:
             return 0;
         gpioToState();
         moving = true;
+        dbprintlf("Done: %d", *done);
         while (moving && !(*done))
         {
             if (!override && state != ScanMotor_State::OK)
