@@ -110,7 +110,7 @@ unsigned int LoadCurrentPos()
             bprintlf(RED_FG "Current position not known, please enter current counter readout (must be in X.XX format): ");
             scanf("%49s", buf);
             char *loc = NULL;
-            if ((loc = strrchr(buf, '.')) == NULL)
+            if ((loc = strchr(buf, '.')) == NULL)
             {
                 bprintlf(RED_FG "Does not include '.'.");
                 continue;
@@ -134,7 +134,7 @@ unsigned int LoadCurrentPos()
                     continue;
                 }
                 current_pos = readout * 250;
-                valid = false;
+                valid = true;
             }
         } while (!valid);
         int retry = 10;
