@@ -95,8 +95,8 @@ int main()
         printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
         int step = 1, pd;
         pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        scanmot_current_pos += pd;
         printf("%d Step: %d\n", step, pd);
+        scanmot_current_pos += pd;
         step = 2;
         pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
         printf("%d Step: %d\n", step, pd);

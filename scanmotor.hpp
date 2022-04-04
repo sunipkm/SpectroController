@@ -117,10 +117,11 @@ public:
         moving = true;
         while (state == ScanMotor_State::OK && moving)
         {
-            if (!(nsteps--))
-                break;
+            nsteps--;
             mot->onestep(dir, style);
             gpioToState();
+            if (!nsteps)
+                break;
         }
         moving = false;
         return (steps - nsteps);
