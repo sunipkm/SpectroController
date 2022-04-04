@@ -49,8 +49,8 @@
 static unsigned int scanmot_current_pos = 0;
 const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *)"posinfo.bin";
-unsigned int LoadCurrentPos();
-void InvalidateCurrentPos();
+static unsigned int LoadCurrentPos();
+static void InvalidateCurrentPos();
 void ValidateCurrentPos();
 
 int main()
@@ -84,7 +84,7 @@ int main()
 
     IOMotor iomot_out(iostepper_out, IOMOT_A_LS1, IOMOT_A_LS2, true);
     IOMotor iomot_in(iostepper_in, IOMOT_B_LS1, IOMOT_B_LS2, true);
-    ScanMotor smotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos);
+    ScanMotor smotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos);
 
     printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
     printf("Press any key to continue...");
@@ -95,44 +95,19 @@ int main()
         {
             scanmot_current_pos += smotor.posDelta(1, Adafruit::MotorDir::FORWARD, true);
         }
-        printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
-        int step = 1, pd;
-        pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        printf("%d Step: %d\n", step, pd);
-        scanmot_current_pos += pd;
-        step = 2;
-        pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        printf("%d Step: %d\n", step, pd);
-        scanmot_current_pos += pd;
-        step = 2;
-        pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        printf("%d Step: %d\n", step, pd);
-        scanmot_current_pos += pd;
-        step = 5;
-        pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        printf("%d Step: %d\n", step, pd);
-        scanmot_current_pos += pd;
-        step = 10;
-        pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        printf("%d Step: %d\n", step, pd);
-        scanmot_current_pos += pd;
-        step = 180;
-        pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        printf("%d Step: %d\n", step, pd);
-        scanmot_current_pos += pd;
-        step = 200;
-        pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        printf("%d Step: %d\n", step, pd);
-        scanmot_current_pos += pd;
-        step = 600;
-        pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        printf("%d Step: %d\n", step, pd);
-        scanmot_current_pos += pd;
-        step = 9000;
-        pd = smotor.posDelta(step, Adafruit::MotorDir::FORWARD);
-        printf("%d Step: %d\n", step, pd);
-        scanmot_current_pos += pd;
-        printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
+        scanmot_current_pos += smotor.posDelta(200, Adafruit::MotorDir::FORWARD);
+    }
+    else if (smotor.getState() == ScanMotor_State::LS2)
+    {
+        while (smotor.getState() != ScanMotor_State::OK)
+        {
+            scanmot_current_pos += smotor.posDelta(1, Adafruit::MotorDir::FORWARD, true);
+        }
+        scanmot_current_pos += smotor.posDelta(200, Adafruit::MotorDir::FORWARD);
+    }
+    else if (smotor.getState() == ScanMotor_State::ERROR)
+    {
+        dbprintlf("")
     }
     printf("Press any key to continue...");
     getchar();
@@ -255,8 +230,9 @@ unsigned int LoadCurrentPos()
     return current_pos;
 }
 
-void InvalidateCurrentPos()
+static void InvalidateCurrentPos()
 {
+    dbprintlf("Called!");
     static bool firstRun = true;
     if (firstRun)
     {
@@ -291,7 +267,7 @@ void InvalidateCurrentPos()
     return;
 }
 
-void ValidateCurrentPos()
+static void ValidateCurrentPos()
 {
     int fd = open(pos_fname, O_RDWR | O_SYNC);
     if (fd <= 0)

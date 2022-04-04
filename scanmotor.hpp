@@ -25,6 +25,8 @@ enum class ScanMotor_State: uint8_t
     ERROR = 3
 };
 
+typedef void (*voidptr_t)();
+
 class ScanMotor
 {
 private:
@@ -36,9 +38,10 @@ private:
     int absPos;                  // absolute position
     volatile bool moving;        // move indicator
     Adafruit::StepperMotor *mot; // stepper motor
+    voidptr_t invalidFn; // invalidate current position
 
 public:
-    ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 10000)
+    ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 10000, voidptr_t _invalidFn = NULL)
     {
         if (mot == NULL || mot == nullptr)
             throw std::runtime_error("Stepper motor pointer can not be null.");
@@ -84,6 +87,7 @@ public:
         {
             throw std::runtime_error("Both limit switches closed, indicates wiring error.");
         }
+        invalidFn = _invalidFn;
     }
 
     int goToPos(int target)
@@ -120,6 +124,8 @@ public:
             if (!override && state != ScanMotor_State::OK)
                 break;
             nsteps--;
+            if (invalidFn != NULL)
+                invalidFn();
             mot->onestep(dir, style);
             gpioToState();
             if (!nsteps)
