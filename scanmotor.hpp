@@ -27,6 +27,13 @@ enum class ScanMotor_State: uint8_t
 
 typedef void (*voidfptr_t)();
 
+static volatile sig_atomic_t scanmotor_internal_done = 0;
+
+static void ScanMotor_sigHandler(int sig)
+{
+    scanmotor_internal_done = 1;
+}
+
 class ScanMotor
 {
 private:
@@ -39,12 +46,15 @@ private:
     volatile bool moving;        // move indicator
     Adafruit::StepperMotor *mot; // stepper motor
     voidfptr_t invalidFn; // invalidate current position
+    volatile sig_atomic_t *done;
 
 public:
     ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 10000, voidfptr_t _invalidFn = NULL)
     {
         if (mot == NULL || mot == nullptr)
             throw std::runtime_error("Stepper motor pointer can not be null.");
+        signal(SIGINT, ScanMotor_sigHandler);
+        done = &scanmotor_internal_done;
         this->mot = mot;
         this->ls1 = LimitSW1;
         this->ls2 = LimitSW2;
@@ -119,7 +129,7 @@ public:
             return 0;
         gpioToState();
         moving = true;
-        while (moving)
+        while (moving && !(*done))
         {
             if (!override && state != ScanMotor_State::OK)
                 break;

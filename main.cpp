@@ -82,9 +82,9 @@ int main()
     Adafruit::StepperMotor *iostepper_out = io_shield.getStepper(IOMOT_REVS, IOMOT_A_PORT);
     Adafruit::StepperMotor *iostepper_in = io_shield.getStepper(IOMOT_REVS, IOMOT_B_PORT);
 
+    ScanMotor smotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos);
     IOMotor iomot_out(iostepper_out, IOMOT_A_LS1, IOMOT_A_LS2, true);
     IOMotor iomot_in(iostepper_in, IOMOT_B_LS1, IOMOT_B_LS2, true);
-    ScanMotor smotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos);
 
     printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
     if (smotor.getState() == ScanMotor_State::LS1)
@@ -106,10 +106,6 @@ int main()
     else if (smotor.getState() == ScanMotor_State::ERROR)
     {
         dbprintlf("In error state");
-    }
-    while (smotor.getState() == ScanMotor_State::OK)
-    {
-        scanmot_current_pos -= smotor.posDelta(200, Adafruit::MotorDir::FORWARD);
     }
     printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
 
