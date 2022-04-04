@@ -64,9 +64,10 @@ static void MotorSetup();
 
 int main()
 {
-    
     MotorSetup();
-    smotor->goToPos(scanmot_current_pos + 200);
+    bprintlf(YELLOW_FG "Current pos: %u == %.2f", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
+    if (smotor != nullptr)
+        smotor->goToPos(scanmot_current_pos + 200);
     return 0;
 }
 
