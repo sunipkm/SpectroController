@@ -732,11 +732,11 @@ void gpioDestroy(void)
                 if (gpio_pins_init.mode[i] >= 0) // pin was initialized before
                 {
                     gpioSetMode(i, gpio_pins_init.mode[i]);
-                    if (!gpioWrite(i, gpio_pins_init.val[i]))
+                    if (gpioWrite(i, gpio_pins_init.val[i]))
                         eprintf("GPIOWrite error");
                 }
                 else if (gpio_props_dev.mode[i] == GPIO_OUT) // set pin to low if pin is output and was not initialized
-                    if (!gpioWrite(i, GPIO_LOW))
+                    if (gpioWrite(i, GPIO_LOW))
                         eprintf("GPIOWrite error");
                 close(gpio_props_dev.fd_val[i]);
                 close(gpio_props_dev.fd_mode[i]);
