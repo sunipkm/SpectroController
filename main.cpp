@@ -51,7 +51,7 @@ const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *)"posinfo.bin";
 static unsigned int LoadCurrentPos();
 static void InvalidateCurrentPos();
-void ValidateCurrentPos();
+static void ValidateCurrentPos();
 
 int main()
 {
@@ -120,7 +120,7 @@ int main()
     return 0;
 }
 
-unsigned int LoadCurrentPos()
+static unsigned int LoadCurrentPos()
 {
     // 1. Check if file exists, if not ask for step counter and clear all calibration
     int fd = open(pos_fname, O_RDWR | O_SYNC);
