@@ -46,7 +46,6 @@
 #define TRIGIN 18  // GPIO trigger in
 #define TRIGOUT 16 // GPIO trigger out
 
-
 static unsigned int scanmot_current_pos = 0;
 const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *) "posinfo.bin";
