@@ -87,8 +87,6 @@ int main()
     ScanMotor smotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos);
 
     printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
-    printf("Press any key to continue...");
-    getchar();
     if (smotor.getState() == ScanMotor_State::LS1)
     {
         while (smotor.getState() != ScanMotor_State::OK)
@@ -101,21 +99,19 @@ int main()
     {
         while (smotor.getState() != ScanMotor_State::OK)
         {
-            scanmot_current_pos += smotor.posDelta(1, Adafruit::MotorDir::FORWARD, true);
+            scanmot_current_pos += smotor.posDelta(1, Adafruit::MotorDir::BACKWARD, true);
         }
-        scanmot_current_pos += smotor.posDelta(200, Adafruit::MotorDir::FORWARD);
+        scanmot_current_pos += smotor.posDelta(200, Adafruit::MotorDir::BACKWARD);
     }
     else if (smotor.getState() == ScanMotor_State::ERROR)
     {
         dbprintlf("In error state");
     }
-    printf("Press any key to continue...");
-    getchar();
-    // while (smotor.getState() == ScanMotor_State::OK)
-    // {
-    //     scanmot_current_pos -= smotor.posDelta(200, Adafruit::MotorDir::BACKWARD);
-    // }
-    // printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
+    while (smotor.getState() == ScanMotor_State::OK)
+    {
+        scanmot_current_pos -= smotor.posDelta(200, Adafruit::MotorDir::BACKWARD);
+    }
+    printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
 
     return 0;
 }
