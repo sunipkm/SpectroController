@@ -132,6 +132,8 @@ int main()
         scanmot_current_pos += pd;
         printf("Current pos: %u == %.2f\n", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
     }
+    printf("Press any key to continue...");
+    getchar();
     while (smotor.getState() == ScanMotor_State::OK)
     {
         scanmot_current_pos -= smotor.posDelta(200, Adafruit::MotorDir::BACKWARD);
