@@ -142,7 +142,7 @@ int main()
 
     // Menu1 nav
     // Makes wgetch nonblocking so the menu isnt hogging all the cycles.
-    wtimeout(stdscr, 5);
+    wtimeout(stdscr, 1);
     unsigned int scanmot_old_pos = scanmot_current_pos;
     std::string iomot_in_port = iomot_in->getStateStr();
     std::string iomot_out_port = iomot_out->getStateStr();
