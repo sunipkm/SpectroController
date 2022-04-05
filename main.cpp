@@ -247,6 +247,7 @@ int main()
             {
                 unpost_menu(menu1);
                 wclear(win[1]);
+                mvwprintw(win[1], 0, 2, " Location Input ");
                 box(win[1], 0, 0);
                 if (sel == 2)
                 {
@@ -258,11 +259,11 @@ int main()
                 }
                 echo();
                 wrefresh(win[1]);
-                nodelay(stdscr, false);
+                nodelay(win[1], false);
                 int newloc = 0;
-                wscanw(stdscr, "%d", &newloc);
+                wscanw(win[1], "%d", &newloc);
                 noecho();
-                wtimeout(stdscr, 5);
+                wtimeout(win[1], 5);
                 bool move = false;
                 if (newloc != 0)
                 {
@@ -282,6 +283,9 @@ int main()
                     if (move)
                         smotor->goToPos(newloc);
                 }
+                wclear(win[1]);
+                mvwprintw(win[1], 0, 2, " Options ");
+                box(win[1], 0, 0);
                 set_menu_win(menu1, win[1]);
                 set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
                 // set_menu_sub(my_menu, win[1]);
