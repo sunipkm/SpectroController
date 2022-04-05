@@ -401,6 +401,7 @@ static void MotorCleanup()
     delete iomot_out;
     delete iomot_in;
     delete sm_shield;
+    delete ioshield;
 }
 
 static void MotorSetup()
