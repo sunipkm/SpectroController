@@ -92,6 +92,7 @@ char *menu_choices_idx[] = {
 char *port_menu_desc[] = {
     (char *)"Port A",
     (char *)"Port B",
+    (char *)"Back",
     (char *)NULL};
 
 int main()
@@ -159,20 +160,20 @@ int main()
         {
             if (smotor->isMoving()) // print motor stop message
             {
-                mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 2, "Scanning motor is moving.");
-                mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 3, "Press F1, S, Q or Space to stop.");
+                mvwprintw(win[1], 2, 10, "Scanning motor is moving.");
+                mvwprintw(win[1], 2, 11, "Press F1, S, Q or Space to stop.");
             }
             else // print iomotor message
             {
-                mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 2, "IO Ports are changing.");
-                mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 3, "Operations disabled.");
+                mvwprintw(win[1], 2, 10, "IO Ports are changing.");
+                mvwprintw(win[1], 2, 11, "Operations disabled.");
             }
             wrefresh(win[1]);
         }
         else if (old_moving && !moving) // clear message
         {
-            mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 2, "                                        ");
-            mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 3, "                                        ");
+            mvwprintw(win[1], 2, 10, "                                        ");
+            mvwprintw(win[1], 2, 11, "                                        ");
             wrefresh(win[1]);
         }
         // update
@@ -269,11 +270,14 @@ int main()
                             st = IOMotor_State::PORTA;
                         else if (idx == 1)
                             st = IOMotor_State::PORTB;
+                        else if (idx == 2)
+                            goto ret_menu1;
                         if (sel == 0)
                             iomot_in->setState(st);
                         else if (sel == 1)
                             iomot_out->setState(st);
                         // revert back to menu 1
+ret_menu1:
                         unpost_menu(menu2);
                         wclear(win[1]);
                         mvwprintw(win[1], 0, 2, " Options ", sel);
