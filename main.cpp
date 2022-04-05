@@ -153,6 +153,9 @@ int main()
         bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
         // update win 0
         scanmot_current_pos = smotor->getPos();
+        iomot_in_port = iomot_in->getStateStr();
+        iomot_out_port = iomot_out->getStateStr();
+        scanmot_status = smotor->getStateStr();
         static bool redraw = true;
         if (scanmot_old_pos != scanmot_current_pos)
         {
@@ -187,7 +190,7 @@ int main()
             mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
             mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
             wrefresh(win[0]);
-            redraw = false;
+            // redraw = false;
         }
         // Menu handling.
         if (c == KEY_DOWN && !moving)
