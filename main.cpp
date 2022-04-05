@@ -178,14 +178,14 @@ int main()
         {
             mvwprintw(win[0], 2, 2, "        ");
             mvwprintw(win[0], 2, 2, "%s", iomot_in_port.c_str());
-            mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "%s", iomot_out_port.c_str());
             mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "        ");
-            mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "%s", scanmot_status.c_str());
+            mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "%s", iomot_out_port.c_str());
             mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "        ");
+            mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "%s", scanmot_status.c_str());
             mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
             mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%u", scanmot_current_pos);
-            mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
             mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
+            mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
             wrefresh(win[0]);
             redraw = false;
         }
