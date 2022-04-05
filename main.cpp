@@ -161,7 +161,7 @@ int main()
             if (smotor->isMoving()) // print motor stop message
             {
                 mvwprintw(win[1], menu1_n_choices + 4, 4, "Info: Scanning motor is moving.");
-                mvwprintw(win[1], menu1_n_choices + 5, 4, "      Press F1, S, Q or Space to stop.");
+                mvwprintw(win[1], menu1_n_choices + 5, 4, "      Press F4, S, Q or Space to stop.");
             }
             else // print iomotor message
             {
