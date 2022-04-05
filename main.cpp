@@ -68,6 +68,7 @@ void sighandler(int sig)
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 Adafruit::MotorShield *sm_shield = nullptr;
+Adafruit::MotorShield *ioshield = nullptr;
 ScanMotor *smotor = nullptr;
 IOMotor *iomot_out = nullptr;
 IOMotor *iomot_in = nullptr;
@@ -381,21 +382,21 @@ static void MotorSetup()
     }
     Adafruit::StepperMotor *scanstepper = sm_shield->getStepper(SMOT_REVS, SMOT_PORT);
 
-    Adafruit::MotorShield io_shield(IOMSHIELD_ADDR, MSHIELD_BUS);
+    ioshield = new Adafruit::MotorShield(IOMSHIELD_ADDR, MSHIELD_BUS);
     try
     {
-        io_shield.begin();
+        ioshield->begin();
     }
     catch (const std::exception &e)
     {
         dbprintlf("Exception: %s.", e.what());
     }
-    Adafruit::StepperMotor *iostepper_out = io_shield.getStepper(IOMOT_REVS, IOMOT_A_PORT);
-    Adafruit::StepperMotor *iostepper_in = io_shield.getStepper(IOMOT_REVS, IOMOT_B_PORT);
+    Adafruit::StepperMotor *iostepper_out = ioshield->getStepper(IOMOT_REVS, IOMOT_A_PORT);
+    Adafruit::StepperMotor *iostepper_in = ioshield->getStepper(IOMOT_REVS, IOMOT_B_PORT);
 
     smotor = new ScanMotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos);
     iomot_out = new IOMotor(iostepper_out, IOMOT_A_LS1, IOMOT_A_LS2, true);
-    iomot_in = new IOMotor(iostepper_in, IOMOT_B_LS1, IOMOT_B_LS2, true);
+    iomot_in = new IOMotor(iostepper_in, IOMOT_B_LS1, IOMOT_B_LS2, false);
 
     bprintlf(GREEN_FG "Current pos: %u == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     if (smotor->getState() == ScanMotor_State::LS1)
