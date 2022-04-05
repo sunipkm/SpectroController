@@ -273,7 +273,7 @@ int main()
                             newloc = 1000;
                         if (newloc < -1000)
                             newloc = -1000;
-                        newloc = scanmot_current_pos + newloc;
+                        newloc = ((int) scanmot_current_pos) + newloc;
                         move = true;
                     }
                     else if (sel == 2 && newloc > 0)
