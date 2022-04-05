@@ -77,11 +77,13 @@ char *menu1_choices_desc[] = {
     (char *)"Select Output Port",
     (char *)"Go to Location",
     (char *)"Step Relative",
-    (char *)"Exits the Program"};
+    (char *)"Exits the Program",
+    (char *)NULL};
 
 char *port_menu_desc[] = {
     (char *)"Port A",
-    (char *)"Port B"};
+    (char *)"Port B",
+    (char *)NULL};
 
 int main()
 {
