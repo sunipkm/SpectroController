@@ -87,8 +87,7 @@ char *menu_choices_idx[] = {
     (char *)"3:",
     (char *)"4:",
     (char *)"5:",
-    (char *)NULL
-};
+    (char *)NULL};
 
 char *port_menu_desc[] = {
     (char *)"Port A",
@@ -211,6 +210,14 @@ int main()
             {
                 // Generate the menu.
                 unpost_menu(menu1);
+                wclear(win[1]);
+                if (sel == 0)
+                    mvwprintw(win[1], 0, 2, " Input Port ");
+                else if (sel == 1)
+                    mvwprintw(win[1], 0, 2, " Output Port ");
+                else
+                    mvwprintw(win[1], 0, 2, " Unknown %d ", sel);
+                box(win[1], 0, 0);
                 set_menu_win(menu2, win[1]);
                 set_menu_sub(menu2, derwin(win[1], 6, 38, 2, 1));
                 set_menu_mark(menu2, " * ");
@@ -243,6 +250,9 @@ int main()
                             iomot_out->setState(st);
                         // revert back to menu 1
                         unpost_menu(menu2);
+                        wclear(win[1]);
+                        mvwprintw(win[1], 0, 2, " Options ", sel);
+                        box(win[1], 0, 0);
                         set_menu_win(menu1, win[1]);
                         set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
                         set_menu_mark(menu1, " * ");
@@ -282,7 +292,7 @@ int main()
                             newloc = 1000;
                         if (newloc < -1000)
                             newloc = -1000;
-                        newloc = ((int) scanmot_current_pos) + newloc;
+                        newloc = ((int)scanmot_current_pos) + newloc;
                         move = true;
                     }
                     else if (sel == 2 && newloc > 0)
