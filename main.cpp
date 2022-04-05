@@ -247,6 +247,7 @@ int main()
             {
                 unpost_menu(menu1);
                 wclear(win[1]);
+                box(win[1], 0, 0);
                 if (sel == 2)
                 {
                     mvwprintw(win[1], 2, 2, "Enter absolute position (current: %u): ", scanmot_current_pos);
@@ -276,7 +277,8 @@ int main()
                     {
                         move = true;
                     }
-                    smotor->goToPos(newloc);
+                    if (move)
+                        smotor->goToPos(newloc);
                 }
                 set_menu_win(menu1, win[1]);
                 set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
