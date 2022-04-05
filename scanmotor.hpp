@@ -127,6 +127,10 @@ public:
             if (!override && state != ScanMotor_State::GOOD)
                 break;
             nsteps--;
+            if (dir == dir2)
+                absPos++;
+            else if (dir == dir1)
+                absPos--;
             if (invalidFn != NULL)
                 invalidFn();
             mot->onestep(dir, style);
@@ -205,19 +209,13 @@ private:
         if (target <= 0)
             dbprintlf("Target position %d, invalid.", target);
         if (target > self->absPos)
-            dir =self->dir2; // towards SW2
+            dir = self->dir2; // towards SW2
         else if (target < self->absPos)
             dir = self->dir1; // towards SW1
         else
             return;
         int steps = abs(target - self->absPos);
         int nsteps = self->posDelta(steps, dir);
-        if (target > self->absPos)
-        {
-            self->absPos += nsteps;
-        }
-        else
-            self->absPos -= nsteps;
     }
 };
 
