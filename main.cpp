@@ -343,7 +343,7 @@ program_end:
     ncurses_cleanup();
 
     smotor->eStop(); // stop in case moving
-    scanmot_current_pos = smotor->absPos();
+    scanmot_current_pos = smotor->getPos();
 
     return 0;
 }
