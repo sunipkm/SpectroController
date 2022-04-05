@@ -59,6 +59,11 @@ static void ValidateCurrentPos();
 static void MotorSetup();
 static void MotorCleanup();
 
+void sighandler(int sig)
+{
+
+}
+
 #define STEP_TO_CTR(x) (((double)x) / 250.0)
 #define CTR_TO_STEP(x) (x * 250)
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
@@ -86,6 +91,7 @@ char *port_menu_desc[] =
 
 int main()
 {
+    signal(SIGINT, sighandler);
     atexit(MotorCleanup);
     MotorSetup();
     bprintlf(YELLOW_FG "Current pos: %u == %.2f", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
