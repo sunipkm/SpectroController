@@ -194,7 +194,7 @@ int main()
             menu_driver(menu1, REQ_UP_ITEM);
             wrefresh(win[1]);
         }
-        else if ('\n' && !moving)
+        else if (c == '\n' && !moving)
         {
             int sel = item_index(current_item(menu1));
             if (sel == 0 || sel == 1) // input/output port select
