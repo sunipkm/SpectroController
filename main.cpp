@@ -78,7 +78,7 @@ char *menu1_choices_desc[] = {
     (char *)"Select Output Port",
     (char *)"Go to Location",
     (char *)"Step Relative",
-    (char *)"Exits the Program",
+    (char *)"Exit Program",
     (char *)NULL};
 
 char *menu_choices_idx[] = {
@@ -148,10 +148,35 @@ int main()
     std::string iomot_out_port = iomot_out->getStateStr();
     std::string scanmot_status = smotor->getStateStr();
     std::string iomot_in_port_old = iomot_in_port, iomot_out_port_old = iomot_out_port, scanmot_status_old = scanmot_status;
+    bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
+    bool old_moving = moving;
     while ((c = wgetch(stdscr)) != KEY_F(1))
     {
-        bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
         // update win 0
+        moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
+        // do things with moving transition
+        if (!old_moving && moving) // print message
+        {
+            if (smotor->isMoving()) // print motor stop message
+            {
+                mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 2, "Scanning motor is moving.");
+                mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 3, "Press F1, S, Q or Space to stop.");
+            }
+            else // print iomotor message
+            {
+                mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 2, "IO Ports are changing.");
+                mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 3, "Operations disabled.");
+            }
+            wrefresh(win[1]);
+        }
+        else if (old_moving && !moving) // clear message
+        {
+            mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 2, "                                        ");
+            mvwprintw(win[1], 2, ARRAY_SIZE(menu1_choices_desc) + 3, "                                        ");
+            wrefresh(win[1]);
+        }
+        // update
+        old_moving = moving;
         scanmot_current_pos = smotor->getPos();
         iomot_in_port = iomot_in->getStateStr();
         iomot_out_port = iomot_out->getStateStr();
