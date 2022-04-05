@@ -215,7 +215,7 @@ private:
         else
             return;
         int steps = abs(target - self->absPos);
-        int nsteps = self->posDelta(steps, dir);
+        self->posDelta(steps, dir);
     }
 };
 

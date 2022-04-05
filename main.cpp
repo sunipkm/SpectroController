@@ -344,7 +344,6 @@ int main()
         }
     }
 
-program_end:
     DestroyMenu(menu1, menu1_n_choices, menu1_items);
     DestroyMenu(menu2, menu2_n_choices, menu2_items);
     WindowsDestroy(win, ARRAY_SIZE(win));
