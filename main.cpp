@@ -145,6 +145,40 @@ int main()
         bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
         // update win 0
         scanmot_current_pos = smotor->getPos();
+        static unsigned int scanmot_old_pos = scanmot_old_pos;
+        std::string iomot_in_port = iomot_in->getStateStr();
+        std::string iomot_out_port = iomot_out->getStateStr();
+        std::string scanmot_status = smotor->getStateStr();
+        bool redraw = false;
+        if (scanmot_old_pos != scanmot_current_pos)
+        {
+            redraw = true;
+            scanmot_old_pos = scanmot_current_pos;
+        }
+        static std::string iomot_in_port_old = iomot_in_port, iomot_out_port_old = iomot_out_port, scanmot_status_old = scanmot_status;
+        if (iomot_in_port_old != iomot_in_port)
+        {
+            iomot_in_port_old = iomot_in_port;
+            redraw = true;
+        }
+        if (iomot_out_port_old != iomot_out_port)
+        {
+            iomot_out_port_old = iomot_out_port;
+            redraw = true;
+        }
+        if (iomot_in_port_old != iomot_in_port)
+        {
+            iomot_out_port_old = iomot_out_port;
+            redraw = true;
+        }
+        if (redraw)
+        {
+            mvwprintw(win[0], 2, 2, "%s", iomot_in_port.c_str());
+            mvwprintw(win[1], 2, floor(win0spcg * floor(win_w[0] * cols)), "%s", iomot_out_port.c_str());
+            mvwprintw(win[1], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "%s", scanmot_status.c_str());
+            mvwprintw(win[1], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%u", scanmot_current_pos);
+            mvwprintw(win[1], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
+        }
         // Menu handling.
         if (c == KEY_DOWN && !moving)
         {
@@ -299,6 +333,7 @@ int main()
 
 program_end:
     DestroyMenu(menu1, menu1_n_choices, menu1_items);
+    DestroyMenu(menu2, menu2_n_choices, menu2_items);
     WindowsDestroy(win, ARRAY_SIZE(win));
     refresh();
     ncurses_cleanup();
@@ -619,17 +654,18 @@ void WindowsInit(WINDOW *win[], float win_w[], float win_h[], int rows, int cols
 
     win[0] = InitWin(0, 0, win0w, win0h);
     {
-        mvwprintw(win[0], 0, 2, " OUTPUT ");
-        mvwprintw(win[0], 1, 2, "IN");
-        mvwprintw(win[0], 1, floor(win0spcg * win0w), "OUT");
-        mvwprintw(win[0], 1, 2 * floor(win0spcg * win0w), "STEP");
+        mvwprintw(win[0], 0, 2, " Status ");
+        mvwprintw(win[0], 1, 2, "Input");
+        mvwprintw(win[0], 1, floor(win0spcg * win0w), "Output");
+        mvwprintw(win[0], 1, 2 * floor(win0spcg * win0w), "Scan");
+        mvwprintw(win[0], 1, 3 * floor(win0spcg * win0w), "Step");
         mvwprintw(win[0], win0h - 1, win0w - 10, " %dx%d ", win0w, win0h);
         wrefresh(win[0]);
     }
 
     win[1] = InitWin(0, floor(win0h), win1w, win1h);
     {
-        mvwprintw(win[1], 0, 2, " WHEEL OF MISFORTUNE ");
+        mvwprintw(win[1], 0, 2, " Options ");
         mvwprintw(win[1], win1h - 1, win1w - 10, " %dx%d ", win1w, win1h);
         wrefresh(win[1]);
     }
