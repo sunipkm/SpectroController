@@ -258,9 +258,11 @@ int main()
                 }
                 echo();
                 wrefresh(win[1]);
+                nodelay(stdscr, false);
                 int newloc = 0;
                 wscanw(stdscr, "%d", &newloc);
                 noecho();
+                wtimeout(stdscr, 5);
                 bool move = false;
                 if (newloc != 0)
                 {
