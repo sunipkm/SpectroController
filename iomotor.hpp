@@ -163,10 +163,12 @@ private:
         Adafruit::MotorDir dir = Adafruit::MotorDir::RELEASE;
         if (st == IOMotor_State::PORTA) // requested port A
         {
+            dbprintlf("%p: Requested PORT A", self);
             dir = self->ls1porta ? self->dir1 : self->dir2; // if limit sw 1 is port A, move towards it else move towards limit sw 2
         }
         else if (st == IOMotor_State::PORTB) // requested port B
         {
+            dbprintlf("%p: Requested PORT B", self);
             dir = self->ls1porta ? self->dir2 : self->dir1; // if limit sw 1 is port A, move in the direction of limit sw 2 else move in the direction of limit sw 1
         }
         else // requested unsupported position
