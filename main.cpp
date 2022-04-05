@@ -148,7 +148,7 @@ int main()
         bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
         // update win 0
         scanmot_current_pos = smotor->getPos();
-        static unsigned int scanmot_old_pos = scanmot_old_pos;
+        static unsigned int scanmot_old_pos = scanmot_current_pos;
         std::string iomot_in_port = iomot_in->getStateStr();
         std::string iomot_out_port = iomot_out->getStateStr();
         std::string scanmot_status = smotor->getStateStr();
@@ -341,6 +341,9 @@ program_end:
     WindowsDestroy(win, ARRAY_SIZE(win));
     refresh();
     ncurses_cleanup();
+
+    smotor->eStop(); // stop in case moving
+    scanmot_current_pos = smotor->absPos();
 
     return 0;
 }
