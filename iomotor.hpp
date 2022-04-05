@@ -160,7 +160,7 @@ private:
     static void setStateFcn(IOMotor *self, IOMotor_State st, bool maxStepsLim, Adafruit::MotorStyle style)
     {
         int maxSteps = 50 * 200; // max 200 revs
-        Adafruit::MotorDir dir;
+        Adafruit::MotorDir dir = Adafruit::MotorDir::RELEASE;
         if (st == IOMotor_State::PORTA) // requested port A
         {
             dir = self->ls1porta ? self->dir1 : self->dir2; // if limit sw 1 is port A, move towards it else move towards limit sw 2
