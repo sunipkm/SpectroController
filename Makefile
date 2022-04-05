@@ -15,7 +15,7 @@ LIBCLKGEN = clkgen/libclkgen.a
 COBJS=i2cbus/i2cbus.o \
 		gpiodev/gpiodev.o
 
-motor: $(COBJS) $(CPPOBJS) $(MOTORSHIELDTEST) $(LIBCLKGEN)
+controller: $(COBJS) $(CPPOBJS) $(MOTORSHIELDTEST) $(LIBCLKGEN)
 	$(CXX) -o $@.out $(COBJS) $(CPPOBJS) $(MOTORSHIELDTEST) $(LIBCLKGEN) $(EDLDFLAGS)
 
 %.o: %.c
