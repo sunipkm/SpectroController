@@ -151,7 +151,7 @@ int main()
         std::string iomot_in_port = iomot_in->getStateStr();
         std::string iomot_out_port = iomot_out->getStateStr();
         std::string scanmot_status = smotor->getStateStr();
-        bool redraw = false;
+        static bool redraw = true;
         if (scanmot_old_pos != scanmot_current_pos)
         {
             redraw = true;
@@ -176,10 +176,12 @@ int main()
         if (redraw)
         {
             mvwprintw(win[0], 2, 2, "%s", iomot_in_port.c_str());
-            mvwprintw(win[1], 2, floor(win0spcg * floor(win_w[0] * cols)), "%s", iomot_out_port.c_str());
-            mvwprintw(win[1], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "%s", scanmot_status.c_str());
-            mvwprintw(win[1], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%u", scanmot_current_pos);
-            mvwprintw(win[1], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
+            mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "%s", iomot_out_port.c_str());
+            mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "%s", scanmot_status.c_str());
+            mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%u", scanmot_current_pos);
+            mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
+            wrefresh(win[0]);
+            redraw = false;
         }
         // Menu handling.
         if (c == KEY_DOWN && !moving)
@@ -322,15 +324,6 @@ int main()
         else
         {
         }
-    }
-
-    // Output Window Data Printouts
-    static bool redraw = true;
-
-    if (redraw)
-    {
-        wrefresh(win[0]);
-        redraw = false;
     }
 
 program_end:
