@@ -143,22 +143,22 @@ int main()
     // Menu1 nav
     // Makes wgetch nonblocking so the menu isnt hogging all the cycles.
     wtimeout(stdscr, 5);
+    unsigned int scanmot_old_pos = scanmot_current_pos;
+    std::string iomot_in_port = iomot_in->getStateStr();
+    std::string iomot_out_port = iomot_out->getStateStr();
+    std::string scanmot_status = smotor->getStateStr();
+    std::string iomot_in_port_old = iomot_in_port, iomot_out_port_old = iomot_out_port, scanmot_status_old = scanmot_status;
     while ((c = wgetch(stdscr)) != KEY_F(1))
     {
         bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
         // update win 0
         scanmot_current_pos = smotor->getPos();
-        static unsigned int scanmot_old_pos = scanmot_current_pos;
-        std::string iomot_in_port = iomot_in->getStateStr();
-        std::string iomot_out_port = iomot_out->getStateStr();
-        std::string scanmot_status = smotor->getStateStr();
         static bool redraw = true;
         if (scanmot_old_pos != scanmot_current_pos)
         {
             redraw = true;
             scanmot_old_pos = scanmot_current_pos;
         }
-        static std::string iomot_in_port_old = iomot_in_port, iomot_out_port_old = iomot_out_port, scanmot_status_old = scanmot_status;
         if (iomot_in_port_old != iomot_in_port)
         {
             iomot_in_port_old = iomot_in_port;
@@ -176,11 +176,16 @@ int main()
         }
         if (redraw)
         {
+            mvwprintw(win[0], 2, 2, "        ");
             mvwprintw(win[0], 2, 2, "%s", iomot_in_port.c_str());
             mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "%s", iomot_out_port.c_str());
+            mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "        ");
             mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "%s", scanmot_status.c_str());
+            mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "        ");
+            mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
             mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%u", scanmot_current_pos);
             mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
+            mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
             wrefresh(win[0]);
             redraw = false;
         }
