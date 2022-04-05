@@ -80,6 +80,15 @@ char *menu1_choices_desc[] = {
     (char *)"Exits the Program",
     (char *)NULL};
 
+char *menu_choices_idx[] = {
+    (char *)"1:",
+    (char *)"2:",
+    (char *)"3:",
+    (char *)"4:",
+    (char *)"5:",
+    (char *)NULL
+};
+
 char *port_menu_desc[] = {
     (char *)"Port A",
     (char *)"Port B",
@@ -112,11 +121,7 @@ int main()
         menu1_items = (ITEM **)calloc(menu1_n_choices, sizeof(ITEM *));
         for (i = 0; i < menu1_n_choices; ++i)
         {
-            char buf[10] = {
-                0,
-            };
-            snprintf(buf, sizeof(buf), "%d:", i + 1);
-            menu1_items[i] = new_item(buf, menu1_choices_desc[i]);
+            menu1_items[i] = new_item(menu_choices_idx[i], menu1_choices_desc[i]);
         }
         menu1 = new_menu((ITEM **)menu1_items);
         set_menu_win(menu1, win[1]);
