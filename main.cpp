@@ -160,20 +160,20 @@ int main()
         {
             if (smotor->isMoving()) // print motor stop message
             {
-                mvwprintw(win[1], menu1_n_choices + 4, 2, "Scanning motor is moving.");
-                mvwprintw(win[1], menu1_n_choices + 4, 2, "Press F1, S, Q or Space to stop.");
+                mvwprintw(win[1], menu1_n_choices + 4, 4, "Info: Scanning motor is moving.");
+                mvwprintw(win[1], menu1_n_choices + 5, 4, "      Press F1, S, Q or Space to stop.");
             }
             else // print iomotor message
             {
-                mvwprintw(win[1], menu1_n_choices + 4, 10, "IO Ports are changing.");
-                mvwprintw(win[1], menu1_n_choices + 4, 11, "Operations disabled.");
+                mvwprintw(win[1], menu1_n_choices + 4, 4, "Info: IO Ports are changing.");
+                mvwprintw(win[1], menu1_n_choices + 5, 4, "      Operations disabled.");
             }
             wrefresh(win[1]);
         }
         else if (old_moving && !moving) // clear message
         {
-            mvwprintw(win[1], menu1_n_choices + 4, 10, "                                        ");
-            mvwprintw(win[1], menu1_n_choices + 4, 11, "                                        ");
+            mvwprintw(win[1], menu1_n_choices + 4, 4, "                                        ");
+            mvwprintw(win[1], menu1_n_choices + 5, 4, "                                        ");
             wrefresh(win[1]);
         }
         // update
