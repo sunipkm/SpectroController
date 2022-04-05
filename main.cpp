@@ -61,7 +61,6 @@ static void MotorCleanup();
 
 void sighandler(int sig)
 {
-
 }
 
 #define STEP_TO_CTR(x) (((double)x) / 250.0)
@@ -78,16 +77,11 @@ char *menu1_choices_desc[] = {
     (char *)"Select Output Port",
     (char *)"Go to Location",
     (char *)"Step Relative",
-    (char *)"Exits the Program",
-    (char *)NULL,
-};
+    (char *)"Exits the Program"};
 
-char *port_menu_desc[] =
-    {
-        (char *)"Port A",
-        (char *)"Port B",
-        (char *)NULL,
-};
+char *port_menu_desc[] = {
+    (char *)"Port A",
+    (char *)"Port B"};
 
 int main()
 {
@@ -203,7 +197,7 @@ int main()
                 unpost_menu(menu1);
                 set_menu_win(menu2, win[1]);
                 set_menu_sub(menu2, derwin(win[1], 6, 38, 2, 1));
-                set_menu_mark(menu2, " x ");
+                set_menu_mark(menu2, " * ");
                 post_menu(menu2);
                 wrefresh(win[1]);
                 while ((c = wgetch(stdscr)) != KEY_F(1))
