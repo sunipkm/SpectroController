@@ -279,6 +279,9 @@ int main()
                     else if (sel == 2 && newloc > 0)
                     {
                         move = true;
+                        mvwprintw(win[1], 2, 20, "%d", newloc);
+                        wrefresh(win[1]);
+                        sleep(1);
                     }
                     if (move)
                         smotor->goToPos(newloc);
