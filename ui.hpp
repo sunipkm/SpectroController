@@ -12,13 +12,15 @@
 #include <ncurses.h>
 #include <menu.h>
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+#include <string>
 
-static WINDOW *win[3] = {0};
-static float win_w[3] = {1.f, 0.5, 0.5};
-static float win_h[3] = {0.25, 0.7, 0.7};
+
+
+static WINDOW *win[2] = {0};
+static float win_w[3] = {1.f, 0.35f, 0.65f};
+static float win_h[3] = {0.35, 0.65, 0.65};
 static float win0spcg = 0.3; // Spacing between each of the three entries within window 0, as a percentage of the total width.
-static int winmin_h[3] = {7, 10, 10};
+static int winmin_h[3] = {7, 16, 16};
 
 template <class T>
 class Data
@@ -59,9 +61,9 @@ private:
 
 typedef struct
 {
-    Data<int> d1[1];
-    Data<double> d2[1];
-    Data<double> d3[1];
+    Data<unsigned int> *pos;
+    Data<int> *inport;
+    Data<int> *outport;
 } ui_data_t;
 
 /**
@@ -81,6 +83,8 @@ WINDOW *InitWin(int col, int row, int cols, int rows);
  * @param local_win
  */
 void DestroyWin(WINDOW *local_win);
+
+void DestroyMenu(MENU *menu, int n_choices, ITEM **items);
 
 /**
  * @brief Initializes all windows.

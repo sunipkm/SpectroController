@@ -17,9 +17,11 @@
 #include "Adafruit/MotorShield.hpp"
 #include <stdint.h>
 
+#include <thread>
+
 enum class ScanMotor_State : uint8_t
 {
-    OK = 0,
+    GOOD = 0,
     LS1 = 1,
     LS2 = 2,
     ERROR = 3
@@ -101,32 +103,15 @@ public:
         this->absPos = absPos;
     }
 
-    ~ScanMotor()
-    {
-        bprintlf(BLUE_FG "Called");
-    }
-
     inline int getPos() const { return absPos; }
 
-    int goToPos(int target)
+    int goToPos(int target, bool blocking = false)
     {
-        Adafruit::MotorDir dir = Adafruit::MotorDir::RELEASE;
-        if (target <= 0)
-            dbprintlf("Target position %d, invalid.", target);
-        if (target > absPos)
-            dir = dir2; // towards SW2
-        else if (target < absPos)
-            dir = dir1; // towards SW1
+        std::thread thr(goToPosInternal, this, target);
+        if (blocking)
+            thr.join();
         else
-            return absPos;
-        int steps = abs(target - absPos);
-        int nsteps = posDelta(steps, dir);
-        if (target > absPos)
-        {
-            absPos += nsteps;
-        }
-        else
-            target -= nsteps;
+            thr.detach();
         return absPos;
     }
 
@@ -139,7 +124,7 @@ public:
         moving = true;
         while (moving && !(*done))
         {
-            if (!override && state != ScanMotor_State::OK)
+            if (!override && state != ScanMotor_State::GOOD)
                 break;
             nsteps--;
             if (invalidFn != NULL)
@@ -156,6 +141,25 @@ public:
     ScanMotor_State getState()
     {
         return state;
+    }
+
+    std::string getStateStr()
+    {
+        gpioToState();
+        std::string motorst;
+        if (state == ScanMotor_State::ERROR)
+            motorst = "Error";
+        else if (state == ScanMotor_State::LS1)
+            motorst = "Hit Limit SW 1";
+        else if (state == ScanMotor_State::LS2)
+            motorst = "Hit Limit SW 2";
+        else if (state == ScanMotor_State::GOOD && moving)
+            motorst = "Moving";
+        else if (state == ScanMotor_State::GOOD && !moving)
+            motorst = "Ready";
+        else
+            motorst = "Unknown " + std::to_string((int)state) + ".";
+        return motorst;
     }
 
     void eStop()
@@ -180,7 +184,7 @@ private:
         }
         if (st_ls1 == GPIO_LOW && st_ls2 == GPIO_LOW) // both switches open, intermediate position
         {
-            state = ScanMotor_State::OK;
+            state = ScanMotor_State::GOOD;
             return;
         }
         if (st_ls1 == GPIO_HIGH && st_ls2 == GPIO_LOW) // LS1 closed, LS2 open
@@ -193,6 +197,27 @@ private:
             state = ScanMotor_State::LS2;
             return;
         }
+    }
+
+    static void goToPosInternal(ScanMotor *self, int target)
+    {
+        Adafruit::MotorDir dir = Adafruit::MotorDir::RELEASE;
+        if (target <= 0)
+            dbprintlf("Target position %d, invalid.", target);
+        if (target > self->absPos)
+            dir =self->dir2; // towards SW2
+        else if (target < self->absPos)
+            dir = self->dir1; // towards SW1
+        else
+            return;
+        int steps = abs(target - self->absPos);
+        int nsteps = self->posDelta(steps, dir);
+        if (target > self->absPos)
+        {
+            self->absPos += nsteps;
+        }
+        else
+            self->absPos -= nsteps;
     }
 };
 

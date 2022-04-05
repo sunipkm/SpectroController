@@ -17,7 +17,10 @@
 #include "Adafruit/meb_print.h"
 #include <stdint.h>
 #include <unistd.h>
-enum class IOMotor_State: uint8_t
+
+#include <thread>
+
+enum class IOMotor_State : uint8_t
 {
     MOVING = 0,
     PORTA = 1,
@@ -88,7 +91,7 @@ public:
                 else if (state == IOMotor_State::MOVING)
                     motorst = "Moving";
                 else
-                    motorst = "Unknown " + std::to_string((int) state) + ".";
+                    motorst = "Unknown " + std::to_string((int)state) + ".";
                 throw std::runtime_error("Expected state PORT A, but current state " + motorst);
             }
         }
@@ -99,34 +102,30 @@ public:
         return state;
     }
 
-    IOMotor_State setState(IOMotor_State st, bool maxStepsLim = true, Adafruit::MotorStyle style = Adafruit::MotorStyle::DOUBLE)
+    std::string getStateStr()
     {
-        int maxSteps = 50 * 200; // max 200 revs
-        Adafruit::MotorDir dir;
-        if (st == IOMotor_State::PORTA) // requested port A
-        {
-            dir = ls1porta ? dir1 : dir2; // if limit sw 1 is port A, move towards it else move towards limit sw 2
-        }
-        else if (st == IOMotor_State::PORTB) // requested port B
-        {
-            dir = ls1porta ? dir2 : dir1; // if limit sw 1 is port A, move in the direction of limit sw 2 else move in the direction of limit sw 1
-        }
-        else // requested unsupported position
-        {
-            // Temporary change to allow testing.
-            // throw std::runtime_error("Requested error or moving, not supported!");
-            dbprintlf("Requested state change to ERROR or MOVING, which are invalid. Note: will not throw exception due to testing.");
-            return IOMotor_State::ERROR;
-        }
-        gpioToState();                          // find out current state
-        while ((state != st) && (maxSteps > 0)) // while we are not in target state and we have steps to move
-        {
-            mot->onestep(dir, style); // move one step
-            // usleep(mot->getStepTime());
-            gpioToState();   // check state
-            if (maxStepsLim) // if limit imposed, reduce max steps
-                maxSteps--;
-        }
+        gpioToState();
+        std::string motorst;
+        if (state == IOMotor_State::ERROR)
+            motorst = "Error";
+        else if (state == IOMotor_State::PORTA)
+            motorst = "PORT A";
+        else if (state == IOMotor_State::PORTB)
+            motorst = "PORT B";
+        else if (state == IOMotor_State::MOVING)
+            motorst = "Moving";
+        else
+            motorst = "Unknown " + std::to_string((int)state) + ".";
+        return motorst;
+    }
+
+    IOMotor_State setState(IOMotor_State st, bool blocking = false, bool maxStepsLim = true, Adafruit::MotorStyle style = Adafruit::MotorStyle::DOUBLE)
+    {
+        std::thread thr(setStateFcn, this, st, maxStepsLim, style);
+        if (!blocking)
+            thr.detach();
+        else
+            thr.join();
         gpioToState(); // final verification
         return state;
     }
@@ -156,6 +155,36 @@ private:
             state = ls1porta ? IOMotor_State::PORTB : IOMotor_State::PORTA;
             return;
         }
+    }
+
+    static void setStateFcn(IOMotor *self, IOMotor_State st, bool maxStepsLim, Adafruit::MotorStyle style)
+    {
+        int maxSteps = 50 * 200; // max 200 revs
+        Adafruit::MotorDir dir;
+        if (st == IOMotor_State::PORTA) // requested port A
+        {
+            dir = self->ls1porta ? self->dir1 : self->dir2; // if limit sw 1 is port A, move towards it else move towards limit sw 2
+        }
+        else if (st == IOMotor_State::PORTB) // requested port B
+        {
+            dir = self->ls1porta ? self->dir2 : self->dir1; // if limit sw 1 is port A, move in the direction of limit sw 2 else move in the direction of limit sw 1
+        }
+        else // requested unsupported position
+        {
+            // Temporary change to allow testing.
+            // throw std::runtime_error("Requested error or moving, not supported!");
+            dbprintlf("Requested state change to ERROR or MOVING, which are invalid. Note: will not throw exception due to testing.");
+        }
+        self->gpioToState();                          // find out current state
+        while ((self->state != st) && (maxSteps > 0)) // while we are not in target state and we have steps to move
+        {
+            self->mot->onestep(dir, style); // move one step
+            // usleep(mot->getStepTime());
+            self->gpioToState();   // check state
+            if (maxStepsLim) // if limit imposed, reduce max steps
+                maxSteps--;
+        }
+        self->gpioToState(); // final verification
     }
 };
 

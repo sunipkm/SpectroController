@@ -14,12 +14,16 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <math.h>
 
 #include <iomotor.hpp>
 #include "Adafruit/meb_print.h"
 
 #include "scanmotor.hpp"
 #include "iomotor.hpp"
+
+#include "ui.hpp"
+#include <string>
 
 #define SMSHIELD_ADDR 0x63
 #define IOMSHIELD_ADDR 0x60
@@ -52,27 +56,253 @@ const char *pos_fname = (char *)"posinfo.bin";
 static unsigned int LoadCurrentPos();
 static void InvalidateCurrentPos();
 static void ValidateCurrentPos();
+static void MotorSetup();
 static void MotorCleanup();
 
-#define STEP_TO_CTR(x) (((double) x) / 250.0)
+#define STEP_TO_CTR(x) (((double)x) / 250.0)
 #define CTR_TO_STEP(x) (x * 250)
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 Adafruit::MotorShield *sm_shield = nullptr;
 ScanMotor *smotor = nullptr;
 IOMotor *iomot_out = nullptr;
 IOMotor *iomot_in = nullptr;
 
-static void MotorSetup();
+char *menu1_choices_desc[] = {
+    (char *)"Select Input Port",
+    (char *)"Select Output Port",
+    (char *)"Go to Location",
+    (char *)"Step Relative",
+    (char *)"Exits the Program",
+    (char *)NULL,
+};
+
+char *port_menu_desc[] =
+    {
+        (char *)"Port A",
+        (char *)"Port B",
+        (char *)NULL,
+};
 
 int main()
 {
     atexit(MotorCleanup);
     MotorSetup();
     bprintlf(YELLOW_FG "Current pos: %u == %.2f", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
-    if (smotor != nullptr)
-        scanmot_current_pos = smotor->goToPos(scanmot_current_pos + 1000);
-    else
-        bprintlf(RED_FG "Motor pointer is null");
+    ncurses_init();
+    refresh();
+
+    // Initialization and drawing of windows' static elements.
+    int rows = 0, cols = 0;
+    getmaxyx(stdscr, rows, cols);
+    WindowsInit(win, win_w, win_h, rows, cols);
+
+    // Menu1 setup.
+    ITEM **menu1_items, **menu2_items;
+    int c;
+    MENU *menu1, *menu2;
+    int menu1_n_choices, menu2_n_choices, i;
+
+    // generate_menu(menu1_items, menu1, menu1_n_choices);
+
+    { // Generate the menu.
+        menu1_n_choices = ARRAY_SIZE(menu1_choices_desc);
+        menu1_items = (ITEM **)calloc(menu1_n_choices, sizeof(ITEM *));
+        for (i = 0; i < menu1_n_choices; ++i)
+        {
+            char buf[10] = {
+                0,
+            };
+            snprintf(buf, sizeof(buf), "%d:", i + 1);
+            menu1_items[i] = new_item(buf, menu1_choices_desc[i]);
+        }
+        menu1 = new_menu((ITEM **)menu1_items);
+        set_menu_win(menu1, win[1]);
+        set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+        // set_menu_sub(my_menu, win[1]);
+        set_menu_mark(menu1, " * ");
+        post_menu(menu1);
+        wrefresh(win[1]);
+
+        menu2_n_choices = ARRAY_SIZE(port_menu_desc);
+        menu2_items = (ITEM **)calloc(menu2_n_choices, sizeof(ITEM *));
+        for (i = 0; i < menu2_n_choices; ++i)
+        {
+            menu1_items[i] = new_item(port_menu_desc[i], "");
+        }
+        menu2 = new_menu(menu2_items);
+        set_menu_win(menu2, win[1]);
+        set_menu_sub(menu2, derwin(win[1], 6, 38, 2, 1));
+        // set_menu_sub(my_menu, win[1]);
+        set_menu_mark(menu2, " * ");
+    }
+
+    // Menu1 nav
+    // Makes wgetch nonblocking so the menu isnt hogging all the cycles.
+    wtimeout(stdscr, 5);
+    while ((c = wgetch(stdscr)) != KEY_F(1))
+    {
+        bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
+        // update win 0
+        scanmot_current_pos = smotor->getPos();
+        // Menu handling.
+        if (c == KEY_DOWN && !moving)
+        {
+            menu_driver(menu1, REQ_DOWN_ITEM);
+            wrefresh(win[1]);
+        }
+        else if (c == KEY_UP && !moving)
+        {
+            menu_driver(menu1, REQ_UP_ITEM);
+            wrefresh(win[1]);
+        }
+        else if ('\n' && !moving)
+        {
+            int sel = item_index(current_item(menu1));
+            if (sel == 0 || sel == 1) // input/output port select
+            {
+                // Generate the menu.
+                unpost_menu(menu1);
+                set_menu_win(menu2, win[1]);
+                set_menu_sub(menu2, derwin(win[1], 6, 38, 2, 1));
+                set_menu_mark(menu2, " * ");
+                post_menu(menu2);
+                wrefresh(win[1]);
+                while ((c = wgetch(stdscr)) != KEY_F(1))
+                {
+                    if (c == KEY_DOWN && !moving)
+                    {
+                        menu_driver(menu2, REQ_DOWN_ITEM);
+                        wrefresh(win[1]);
+                    }
+                    else if (c == KEY_UP && !moving)
+                    {
+                        menu_driver(menu2, REQ_UP_ITEM);
+                        wrefresh(win[1]);
+                    }
+                    else if (c == '\n' && !moving)
+                    {
+                        int idx = item_index(current_item(menu2));
+                        // do action
+                        IOMotor_State st = IOMotor_State::ERROR;
+                        if (idx == 0)
+                            st = IOMotor_State::PORTA;
+                        else if (idx == 1)
+                            st = IOMotor_State::PORTB;
+                        if (sel == 0)
+                            iomot_in->setState(st);
+                        else if (sel == 0)
+                            iomot_out->setState(st);
+                        // revert back to menu 1
+                        unpost_menu(menu2);
+                        set_menu_win(menu1, win[1]);
+                        set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+                        set_menu_mark(menu1, " * ");
+                        post_menu(menu1);
+                        wrefresh(win[1]);
+                        break;
+                    }
+                }
+            }
+            else if (sel == 2 || sel == 3) // abs/rel position select
+            {
+                unpost_menu(menu1);
+                wclear(win[1]);
+                if (sel == 2)
+                {
+                    mvwprintw(win[1], 2, 2, "Enter absolute position (current: %u): ", scanmot_current_pos);
+                }
+                else if (sel == 3)
+                {
+                    mvwprintw(win[1], 2, 2, "Enter relative position (current: %u): ", scanmot_current_pos);
+                }
+                echo();
+                wrefresh(win[1]);
+                int newloc = 0;
+                wscanw(stdscr, "%d", &newloc);
+                noecho();
+                bool move = false;
+                if (newloc != 0)
+                {
+                    if (sel == 3)
+                    {
+                        if (newloc > 1000)
+                            newloc = 1000;
+                        if (newloc < -1000)
+                            newloc = -1000;
+                        newloc = scanmot_current_pos + newloc;
+                        move = true;
+                    }
+                    else if (sel == 2 && newloc > 0)
+                    {
+                        move = true;
+                    }
+                    smotor->goToPos(newloc);
+                }
+                set_menu_win(menu1, win[1]);
+                set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+                // set_menu_sub(my_menu, win[1]);
+                set_menu_mark(menu1, " * ");
+                post_menu(menu1);
+                wrefresh(win[1]);
+            }
+            else if (sel == 4) // exit
+            {
+                break;
+            }
+        }
+        else if ((c == '\n' || c == 's' || c == 'S' || c == ' ' || c == 'q' || c == 'Q' || c == KEY_F(4)) && smotor->isMoving())
+        {
+            smotor->eStop();
+        }
+        else if (c == KEY_RESIZE)
+        {
+            // Clean-up.
+            // ncurses_cleanup();
+
+            // // Re-initialization.
+            // ncurses_init();
+            // refresh();
+
+            // getmaxyx(stdscr, rows, cols);
+            // WindowsInit(win, win_w, win_h, rows, cols);
+
+            // { // Generate the menu.
+            //     menu1_n_choices = ARRAY_SIZE(menu1_choices);
+            //     menu1_items = (ITEM **)calloc(menu1_n_choices, sizeof(ITEM *));
+            //     for (i = 0; i < menu1_n_choices; ++i)
+            //     {
+            //         menu1_items[i] = new_item(menu1_choices[i], menu1_choices_desc[i]);
+            //     }
+            //     menu1 = new_menu((ITEM **)menu1_items);
+            //     set_menu_win(menu1, win[1]);
+            //     set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+            //     // set_menu_sub(my_menu, win[1]);
+            //     set_menu_mark(menu1, " * ");
+            //     post_menu(menu1);
+            //     wrefresh(win[1]);
+            // }
+        }
+        else
+        {
+        }
+    }
+
+    // Output Window Data Printouts
+    static bool redraw = true;
+
+    if (redraw)
+    {
+        wrefresh(win[0]);
+        redraw = false;
+    }
+
+program_end:
+    DestroyMenu(menu1, menu1_n_choices, menu1_items);
+    WindowsDestroy(win, ARRAY_SIZE(win));
+    refresh();
+    ncurses_cleanup();
+
     return 0;
 }
 
@@ -120,7 +350,7 @@ static void MotorSetup()
     bprintlf(GREEN_FG "Current pos: %u == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     if (smotor->getState() == ScanMotor_State::LS1)
     {
-        while (smotor->getState() != ScanMotor_State::OK)
+        while (smotor->getState() != ScanMotor_State::GOOD)
         {
             scanmot_current_pos += smotor->posDelta(1, Adafruit::MotorDir::FORWARD, true);
         }
@@ -128,7 +358,7 @@ static void MotorSetup()
     }
     else if (smotor->getState() == ScanMotor_State::LS2)
     {
-        while (smotor->getState() != ScanMotor_State::OK)
+        while (smotor->getState() != ScanMotor_State::GOOD)
         {
             scanmot_current_pos += smotor->posDelta(1, Adafruit::MotorDir::BACKWARD, true);
         }
@@ -328,4 +558,106 @@ static void ValidateCurrentPos()
     close(fd);
     bprintlf(GREEN_FG "Final position: %u == %.2f", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
     return;
+}
+
+WINDOW *InitWin(int col, int row, int cols, int rows)
+{
+    WINDOW *local_win;
+
+    local_win = newwin(rows, cols, row, col);
+    box(local_win, 0, 0); // 0, 0 gives default characters for the vertical and horizontal lines.
+    wrefresh(local_win);  // Show that box.
+
+    return local_win;
+}
+
+void DestroyWin(WINDOW *local_win)
+{
+    /* box(local_win, ' ', ' '); : This won't produce the desired
+     * result of erasing the window. It will leave it's four corners
+     * and so an ugly remnant of window.
+     */
+    wborder(local_win, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+    /* The parameters taken are
+     * 1. win: the window on which to operate
+     * 2. ls: character to be used for the left side of the window
+     * 3. rs: character to be used for the right side of the window
+     * 4. ts: character to be used for the top side of the window
+     * 5. bs: character to be used for the bottom side of the window
+     * 6. tl: character to be used for the top left corner of the window
+     * 7. tr: character to be used for the top right corner of the window
+     * 8. bl: character to be used for the bottom left corner of the window
+     * 9. br: character to be used for the bottom right corner of the window
+     */
+    wrefresh(local_win);
+    delwin(local_win);
+}
+
+void DestroyMenu(MENU *menu, int n_choices, ITEM **items)
+{
+    // Unpost and free all the memory taken up.
+    unpost_menu(menu);
+    free_menu(menu);
+    for (int i = 0; i < n_choices; ++i)
+    {
+        free_item(items[i]);
+    }
+}
+
+void WindowsInit(WINDOW *win[], float win_w[], float win_h[], int rows, int cols)
+{
+    int win0w = floor(win_w[0] * cols);
+    int win0h = floor(win_h[0] * rows);
+    int win1w = floor(win_w[1] * cols);
+    int win1h = floor(win_h[1] * rows);
+
+    win0h = (win0h < winmin_h[0]) ? winmin_h[0] : win0h;
+    win1h = (win1h < winmin_h[1]) ? winmin_h[1] : win1h;
+
+    // int win1y = floor(1 + (win_h[0] * rows));
+    // int win2y = floor(1 + (win_h[0] * rows));
+
+    win[0] = InitWin(0, 0, win0w, win0h);
+    {
+        mvwprintw(win[0], 0, 2, " OUTPUT ");
+        mvwprintw(win[0], 1, 2, "IN");
+        mvwprintw(win[0], 1, floor(win0spcg * win0w), "OUT");
+        mvwprintw(win[0], 1, 2 * floor(win0spcg * win0w), "STEP");
+        mvwprintw(win[0], win0h - 1, win0w - 10, " %dx%d ", win0w, win0h);
+        wrefresh(win[0]);
+    }
+
+    win[1] = InitWin(0, floor(win0h), win1w, win1h);
+    {
+        mvwprintw(win[1], 0, 2, " WHEEL OF MISFORTUNE ");
+        mvwprintw(win[1], win1h - 1, win1w - 10, " %dx%d ", win1w, win1h);
+        wrefresh(win[1]);
+    }
+}
+
+void WindowsDestroy(WINDOW *win[], int num_win)
+{
+    if (win == NULL || win == nullptr)
+    {
+        return;
+    }
+
+    for (int i = 0; i < num_win; i++)
+    {
+        DestroyWin(win[i]);
+    }
+}
+
+void ncurses_init()
+{
+    initscr();
+    cbreak();
+    noecho(); // Doesn't echo input during getch().
+    keypad(stdscr, TRUE);
+}
+
+void ncurses_cleanup()
+{
+    endwin();
+    clear();
 }
