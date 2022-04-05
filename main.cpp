@@ -246,7 +246,7 @@ int main()
                             st = IOMotor_State::PORTB;
                         if (sel == 0)
                             iomot_in->setState(st);
-                        else if (sel == 0)
+                        else if (sel == 1)
                             iomot_out->setState(st);
                         // revert back to menu 1
                         unpost_menu(menu2);
