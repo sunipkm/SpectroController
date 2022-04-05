@@ -137,10 +137,6 @@ int main()
             menu1_items[i] = new_item(port_menu_desc[i], "");
         }
         menu2 = new_menu(menu2_items);
-        set_menu_win(menu2, win[1]);
-        set_menu_sub(menu2, derwin(win[1], 6, 38, 2, 1));
-        // set_menu_sub(my_menu, win[1]);
-        set_menu_mark(menu2, " * ");
     }
 
     // Menu1 nav
