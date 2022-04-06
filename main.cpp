@@ -37,12 +37,12 @@
 #define SMOT_LS2 37 // forward
 #define SMOT_PORT 2 // I2C 0x63, port 2
 
-// output side motor limit switches
+// input side motor limit switches
 #define IOMOT_A_LS1 11 // forward
 #define IOMOT_A_LS2 13 // backward
 #define IOMOT_A_PORT 1 // I2C 0x60, port 1
 
-// input side motor limit switches
+// output side motor limit switches
 #define IOMOT_B_LS1 29 // forward
 #define IOMOT_B_LS2 31 // backward
 #define IOMOT_B_PORT 2 // I2C 0x60, port 2
@@ -100,7 +100,7 @@ int main()
     signal(SIGINT, sighandler);
     atexit(MotorCleanup);
     MotorSetup();
-    bprintlf(YELLOW_FG "Current pos: %u == %.2f", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
+    bprintlf(YELLOW_FG "Current pos: %u == %.2f, launching UI...", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     ncurses_init();
     refresh();
 
@@ -151,8 +151,28 @@ int main()
     std::string iomot_in_port_old = iomot_in_port, iomot_out_port_old = iomot_out_port, scanmot_status_old = scanmot_status;
     bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
     bool old_moving = moving;
-    while ((c = wgetch(stdscr)) != KEY_F(1))
+    while ((c = wgetch(stdscr)))
     {
+        // Check if scan motor is stuck
+        ScanMotor_State smotor_state = smotor->getState();
+        if ((smotor_state == ScanMotor_State::LS1) || (smotor_state == ScanMotor_State::LS2))
+        {
+            if (smotor->isMoving()) // still moving, wait for stop
+                goto skip_reverse;
+            if (smotor_state == ScanMotor_State::LS1) // stuck at LS1
+            {
+                smotor->goToPos(smotor->getPos() + 1000, true);
+            }
+            else if (smotor_state == ScanMotor_State::LS2) // stuck at LS2
+            {
+                smotor->goToPos(smotor->getPos() - 1000, true);
+            }
+            else
+            {
+
+            }
+        }
+skip_reverse:
         // update win 0
         moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
         // do things with moving transition
@@ -249,7 +269,7 @@ int main()
                 set_menu_mark(menu2, " * ");
                 post_menu(menu2);
                 wrefresh(win[1]);
-                while ((c = wgetch(stdscr)) != KEY_F(1))
+                while ((c = wgetch(stdscr)))
                 {
                     if (c == KEY_DOWN && !moving)
                     {
@@ -430,12 +450,12 @@ static void MotorSetup()
     {
         dbprintlf("Exception: %s.", e.what());
     }
-    Adafruit::StepperMotor *iostepper_out = ioshield->getStepper(IOMOT_REVS, IOMOT_A_PORT);
-    Adafruit::StepperMotor *iostepper_in = ioshield->getStepper(IOMOT_REVS, IOMOT_B_PORT);
+    Adafruit::StepperMotor *iostepper_in = ioshield->getStepper(IOMOT_REVS, IOMOT_A_PORT);
+    Adafruit::StepperMotor *iostepper_out = ioshield->getStepper(IOMOT_REVS, IOMOT_B_PORT);
 
     smotor = new ScanMotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos);
-    iomot_out = new IOMotor(iostepper_out, IOMOT_A_LS1, IOMOT_A_LS2, true);
-    iomot_in = new IOMotor(iostepper_in, IOMOT_B_LS1, IOMOT_B_LS2, false);
+    iomot_in = new IOMotor(iostepper_in, IOMOT_A_LS1, IOMOT_A_LS2, true);
+    iomot_out = new IOMotor(iostepper_out, IOMOT_B_LS1, IOMOT_B_LS2, false);
 
     bprintlf(GREEN_FG "Current pos: %u == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     if (smotor->getState() == ScanMotor_State::LS1)

@@ -105,9 +105,9 @@ public:
 
     inline int getPos() const { return absPos; }
 
-    int goToPos(int target, bool blocking = false)
+    int goToPos(int target, bool override = false, bool blocking = false)
     {
-        std::thread thr(goToPosInternal, this, target);
+        std::thread thr(goToPosInternal, this, target, override);
         if (blocking)
             thr.join();
         else
@@ -203,7 +203,7 @@ private:
         }
     }
 
-    static void goToPosInternal(ScanMotor *self, int target)
+    static void goToPosInternal(ScanMotor *self, int target, bool override)
     {
         Adafruit::MotorDir dir = Adafruit::MotorDir::RELEASE;
         if (target <= 0)
@@ -215,7 +215,7 @@ private:
         else
             return;
         int steps = abs(target - self->absPos);
-        self->posDelta(steps, dir);
+        self->posDelta(steps, dir, override);
     }
 };
 
