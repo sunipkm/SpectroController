@@ -260,7 +260,7 @@ int main()
             if (newloc != (int) scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(newloc));
             mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (scanmot_home_pos > 0 && (int) newloc != scanmot_current_pos && newloc > 0)
+            if (scanmot_home_pos > 0 && newloc != (int) scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
 
             wrefresh(win[0]);
