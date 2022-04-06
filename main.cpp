@@ -132,7 +132,7 @@ int main()
         }
         menu1 = new_menu((ITEM **)menu1_items);
         set_menu_win(menu1, win[1]);
-        set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+        set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
         // set_menu_sub(my_menu, win[1]);
         set_menu_mark(menu1, " * ");
         post_menu(menu1);
@@ -331,7 +331,7 @@ int main()
                         mvwprintw(win[1], 0, 2, " Options ", sel);
                         box(win[1], 0, 0);
                         set_menu_win(menu1, win[1]);
-                        set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+                        set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
                         set_menu_mark(menu1, " * ");
                         post_menu(menu1);
                         wrefresh(win[1]);
@@ -405,7 +405,7 @@ int main()
                 mvwprintw(win[1], 0, 2, " Options ");
                 box(win[1], 0, 0);
                 set_menu_win(menu1, win[1]);
-                set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+                set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
                 // set_menu_sub(my_menu, win[1]);
                 set_menu_mark(menu1, " * ");
                 post_menu(menu1);
@@ -436,7 +436,7 @@ int main()
                 mvwprintw(win[1], 0, 2, " Options ");
                 box(win[1], 0, 0);
                 set_menu_win(menu1, win[1]);
-                set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+                set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
                 // set_menu_sub(my_menu, win[1]);
                 set_menu_mark(menu1, " * ");
                 post_menu(menu1);
@@ -472,7 +472,7 @@ int main()
             //     }
             //     menu1 = new_menu((ITEM **)menu1_items);
             //     set_menu_win(menu1, win[1]);
-            //     set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+            //     set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
             //     // set_menu_sub(my_menu, win[1]);
             //     set_menu_mark(menu1, " * ");
             //     post_menu(menu1);
