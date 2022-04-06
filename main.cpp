@@ -254,13 +254,13 @@ int main()
                 mvwprintw(win[0], 4, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
 
             mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (newloc != scanmot_current_pos && newloc > 0)
+            if (newloc != (int) scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%u", newloc);
             mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (newloc != scanmot_current_pos && newloc > 0)
+            if (newloc != (int) scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(newloc));
             mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (scanmot_home_pos > 0 && newloc != scanmot_current_pos && newloc > 0)
+            if (scanmot_home_pos > 0 && (int) newloc != scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
 
             wrefresh(win[0]);
@@ -442,7 +442,7 @@ int main()
                 post_menu(menu1);
                 wrefresh(win[1]);
             }
-            else if (sel == (menu1_n_choices - 1)) // exit
+            else if (sel == 6) // exit
             {
                 break;
             }
