@@ -16,7 +16,6 @@
 #include <string.h>
 #include <math.h>
 
-#include <iomotor.hpp>
 #include "Adafruit/meb_print.h"
 
 #include "scanmotor.hpp"
@@ -24,6 +23,8 @@
 
 #include "ui.hpp"
 #include <string>
+
+#define STEP_TO_LAM ((double)0.00801741)
 
 #define SMSHIELD_ADDR 0x63
 #define IOMSHIELD_ADDR 0x60
@@ -51,6 +52,7 @@
 #define TRIGOUT 16 // GPIO trigger out
 
 static unsigned int scanmot_current_pos = 0;
+static unsigned int scanmot_home_pos = 0;
 const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *)"posinfo.bin";
 static unsigned int LoadCurrentPos();
@@ -64,7 +66,7 @@ void sighandler(int sig)
 }
 
 #define STEP_TO_CTR(x) (((double)x) / 250.0)
-#define CTR_TO_STEP(x) (x * 250)
+#define CTR_TO_STEP(x) (round(x * 250))
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 Adafruit::MotorShield *sm_shield = nullptr;
@@ -74,11 +76,13 @@ IOMotor *iomot_out = nullptr;
 IOMotor *iomot_in = nullptr;
 
 char *menu1_choices_desc[] = {
-    (char *)"Select Input Port",
-    (char *)"Select Output Port",
-    (char *)"Go to Location",
-    (char *)"Step Relative",
-    (char *)"Exit Program",
+    (char *)"Select Input Port",    // 1
+    (char *)"Select Output Port",   // 2
+    (char *)"Go to Location",       // 3
+    (char *)"Go to Wavelength",     // 4
+    (char *)"Step Relative",        // 5
+    (char *)"Update Home Location", // 6
+    (char *)"Exit Program",         // 7
     (char *)NULL};
 
 char *menu_choices_idx[] = {
@@ -87,6 +91,8 @@ char *menu_choices_idx[] = {
     (char *)"3:",
     (char *)"4:",
     (char *)"5:",
+    (char *)"6:",
+    (char *)"7:",
     (char *)NULL};
 
 char *port_menu_desc[] = {
@@ -153,6 +159,13 @@ int main()
     bool old_moving = moving;
     while ((c = wgetch(stdscr)))
     {
+        static bool redraw = true;
+        static int newloc = 0;
+        if (c == KEY_F(5))
+        {
+            wrefresh(win[0]);
+            wrefresh(win[1]);
+        }
         // Check if scan motor is stuck
         ScanMotor_State smotor_state = smotor->getState();
         if ((smotor_state == ScanMotor_State::LS1) || (smotor_state == ScanMotor_State::LS2))
@@ -169,10 +182,9 @@ int main()
             }
             else
             {
-
             }
         }
-skip_reverse:
+    skip_reverse:
         // update win 0
         moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
         // do things with moving transition
@@ -202,7 +214,6 @@ skip_reverse:
         iomot_in_port = iomot_in->getStateStr();
         iomot_out_port = iomot_out->getStateStr();
         scanmot_status = smotor->getStateStr();
-        static bool redraw = true;
         if (scanmot_old_pos != scanmot_current_pos)
         {
             redraw = true;
@@ -227,14 +238,31 @@ skip_reverse:
         {
             mvwprintw(win[0], 2, 2, "        ");
             mvwprintw(win[0], 2, 2, "%s", iomot_in_port.c_str());
+
             mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "        ");
             mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "%s", iomot_out_port.c_str());
+
             mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "        ");
             mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "%s", scanmot_status.c_str());
+
             mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
             mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%u", scanmot_current_pos);
             mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
             mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
+            mvwprintw(win[0], 4, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
+            if (scanmot_home_pos > 0)
+                mvwprintw(win[0], 4, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
+
+            mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
+            if (newloc != scanmot_current_pos && newloc > 0)
+                mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%u", newloc);
+            mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
+            if (newloc != scanmot_current_pos && newloc > 0)
+                mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(newloc));
+            mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
+            if (scanmot_home_pos > 0 && newloc != scanmot_current_pos && newloc > 0)
+                mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
+
             wrefresh(win[0]);
             // redraw = false;
         }
@@ -297,7 +325,7 @@ skip_reverse:
                         else if (sel == 1)
                             iomot_out->setState(st);
                         // revert back to menu 1
-ret_menu1:
+                    ret_menu1:
                         unpost_menu(menu2);
                         wclear(win[1]);
                         mvwprintw(win[1], 0, 2, " Options ", sel);
@@ -311,8 +339,9 @@ ret_menu1:
                     }
                 }
             }
-            else if (sel == 2 || sel == 3) // abs/rel position select
+            else if (sel == 2 || sel == 3 || sel == 4) // abs loc/abs wave/rel position select
             {
+                bool move = false;
                 unpost_menu(menu1);
                 wclear(win[1]);
                 mvwprintw(win[1], 0, 2, " Location Input ");
@@ -321,21 +350,42 @@ ret_menu1:
                 {
                     mvwprintw(win[1], 2, 2, "Enter absolute position (current: %u): ", scanmot_current_pos);
                 }
-                else if (sel == 3)
+                else if (sel == 4)
                 {
                     mvwprintw(win[1], 2, 2, "Enter relative position (current: %u): ", scanmot_current_pos);
+                }
+                else if (sel == 3 && scanmot_home_pos > 0)
+                {
+                    double target_wl = STEP_TO_LAM * (scanmot_current_pos - scanmot_home_pos);
+                    mvwprintw(win[1], 2, 2, "Enter target wavelength (nm) (current: %.3lf): ", target_wl);
+                }
+                else if (sel == 3 && scanmot_home_pos <= 0)
+                {
+                    goto menu1_from_pos;
                 }
                 echo();
                 wrefresh(win[1]);
                 nodelay(win[1], false);
-                int newloc = 0;
-                wscanw(win[1], "%d", &newloc);
+                if (sel == 2 || sel == 4)
+                {
+                    wscanw(win[1], "%d", &newloc);
+                }
+                else if (sel == 3 && scanmot_home_pos > 0) // selected 4 and home position is valid
+                {
+                    double target_wl = 0;
+                    wscanw(win[1], "%lf", &target_wl); // read target wavelength 
+                    int _newloc = round(target_wl / STEP_TO_LAM) + scanmot_home_pos; // get location in steps
+                    if (_newloc >= 0) // valid new location
+                    {
+                        newloc = _newloc; // set destination
+                        move = true; // indicate movement
+                    }
+                }
                 noecho();
                 wtimeout(win[1], 5);
-                bool move = false;
                 if (newloc != 0)
                 {
-                    if (sel == 3)
+                    if (sel == 4)
                     {
                         newloc = ((int)scanmot_current_pos) + newloc;
                         if (newloc <= 0)
@@ -350,6 +400,7 @@ ret_menu1:
                     if (move)
                         smotor->goToPos(newloc);
                 }
+            menu1_from_pos:
                 wclear(win[1]);
                 mvwprintw(win[1], 0, 2, " Options ");
                 box(win[1], 0, 0);
@@ -360,7 +411,38 @@ ret_menu1:
                 post_menu(menu1);
                 wrefresh(win[1]);
             }
-            else if (sel == 4) // exit
+            else if (sel == 5) // home location
+            {
+                unsigned int home_loc = 0;
+                unpost_menu(menu1);
+                wclear(win[1]);
+                mvwprintw(win[1], 0, 2, " Home Location Input ");
+                box(win[1], 0, 0);
+
+                mvwprintw(win[1], 2, 2, "Enter home position (current: %u): ", scanmot_current_pos);
+
+                echo();
+                wrefresh(win[1]);
+                nodelay(win[1], false);
+                
+                wscanw(win[1], "%u", &home_loc);
+                
+                noecho();
+                wtimeout(win[1], 5);
+
+                scanmot_home_pos = home_loc;
+                
+                wclear(win[1]);
+                mvwprintw(win[1], 0, 2, " Options ");
+                box(win[1], 0, 0);
+                set_menu_win(menu1, win[1]);
+                set_menu_sub(menu1, derwin(win[1], 6, 38, 2, 1));
+                // set_menu_sub(my_menu, win[1]);
+                set_menu_mark(menu1, " * ");
+                post_menu(menu1);
+                wrefresh(win[1]);
+            }
+            else if (sel == (menu1_n_choices - 1)) // exit
             {
                 break;
             }
@@ -501,11 +583,6 @@ static unsigned int LoadCurrentPos()
                 bprintlf(RED_FG "Does not include '.'.");
                 continue;
             }
-            else if (strlen(loc) > 3)
-            {
-                bprintlf("Entered: %s, more digits after decimal point.", buf);
-                continue;
-            }
             else if (strlen(loc) < 3)
             {
                 bprintlf("Entered: %s, not enough digits after decimal point.", buf);
@@ -547,11 +624,26 @@ static unsigned int LoadCurrentPos()
         }
         lseek(fd, sizeof(current_pos), SEEK_SET);
         retry = 10;
+        scanmot_home_pos = 0;
+        do
+        {
+            ret = write(fd, &scanmot_home_pos, sizeof(scanmot_home_pos));
+            if (ret != sizeof(scanmot_home_pos))
+                lseek(fd, sizeof(current_pos), SEEK_SET);
+        } while (ret != sizeof(scanmot_home_pos) && retry--);
+        if (ret <= 0 && retry == 0)
+        {
+            dbprintlf("Could not store home position to save file.");
+            close(fd);
+            exit(0);
+        }
+        lseek(fd, sizeof(current_pos) + sizeof(scanmot_home_pos), SEEK_SET);
+        retry = 10;
         do
         {
             ret = write(fd, &scanmot_valid_magic, sizeof(scanmot_valid_magic));
             if (ret != sizeof(scanmot_valid_magic))
-                lseek(fd, sizeof(current_pos), SEEK_SET);
+                lseek(fd, sizeof(current_pos) + sizeof(scanmot_home_pos), SEEK_SET);
         } while (ret != sizeof(scanmot_valid_magic) && retry--);
         if (ret <= 0 && retry == 0)
         {
@@ -565,13 +657,13 @@ static unsigned int LoadCurrentPos()
     // 2. File exists
     // step 1. Check structural validity
     off_t sz = lseek(fd, 0, SEEK_END);
-    if (sz != sizeof(scanmot_valid_magic) + sizeof(scanmot_current_pos))
+    if (sz != sizeof(scanmot_valid_magic) + sizeof(scanmot_home_pos) + sizeof(scanmot_current_pos))
     {
         dbprintlf("Size of position file %s: %u, invalid. Please delete the file and restart the program.", pos_fname, (unsigned int)sz);
         close(fd);
         exit(0);
     }
-    lseek(fd, sizeof(scanmot_current_pos), SEEK_SET);
+    lseek(fd, sizeof(scanmot_current_pos) + sizeof(scanmot_home_pos), SEEK_SET);
     int magic = 0;
     read(fd, &magic, sizeof(scanmot_valid_magic));
     if (magic != scanmot_valid_magic)
@@ -588,6 +680,8 @@ static unsigned int LoadCurrentPos()
         close(fd);
         exit(0);
     }
+    lseek(fd, sizeof(current_pos), SEEK_SET);
+    read(fd, &scanmot_home_pos, sizeof(scanmot_home_pos));
     return current_pos;
 }
 
@@ -609,14 +703,14 @@ static void InvalidateCurrentPos()
         dbprintlf("%s file not found.", pos_fname);
         exit(0);
     }
-    lseek(fd, sizeof(scanmot_current_pos), SEEK_SET);
+    lseek(fd, sizeof(scanmot_current_pos) + sizeof(scanmot_home_pos), SEEK_SET);
     int retry = 10;
     int ret;
     do
     {
         ret = write(fd, &badmagic, sizeof(scanmot_valid_magic));
         if (ret != sizeof(scanmot_valid_magic))
-            lseek(fd, sizeof(scanmot_current_pos), SEEK_SET);
+            lseek(fd, sizeof(scanmot_current_pos) + sizeof(scanmot_home_pos), SEEK_SET);
     } while (ret != sizeof(scanmot_valid_magic) && retry--);
     if (ret <= 0 && retry == 0)
     {
@@ -654,13 +748,27 @@ static void ValidateCurrentPos()
     retry = 10;
     do
     {
+        ret = write(fd, &scanmot_home_pos, sizeof(scanmot_home_pos));
+        if (ret != sizeof(scanmot_home_pos))
+            lseek(fd, sizeof(scanmot_current_pos), SEEK_SET);
+    } while (ret != sizeof(scanmot_home_pos) && retry--);
+    if (ret <= 0 && retry == 0)
+    {
+        dbprintlf("Could not store home position to save file.");
+        close(fd);
+        return;
+    }
+    lseek(fd, sizeof(scanmot_current_pos) + sizeof(scanmot_home_pos), SEEK_SET);
+    retry = 10;
+    do
+    {
         ret = write(fd, &scanmot_valid_magic, sizeof(scanmot_valid_magic));
         if (ret != sizeof(scanmot_valid_magic))
-            lseek(fd, sizeof(scanmot_current_pos), SEEK_SET);
+            lseek(fd, sizeof(scanmot_current_pos) + sizeof(scanmot_home_pos), SEEK_SET);
     } while (ret != sizeof(scanmot_valid_magic) && retry--);
     if (ret <= 0 && retry == 0)
     {
-        dbprintlf("Could not store invalid magic to save file.");
+        dbprintlf("Could not store valid magic to save file.");
         close(fd);
         return;
     }
@@ -730,10 +838,11 @@ void WindowsInit(WINDOW *win[], float win_w[], float win_h[], int rows, int cols
     {
         mvwprintw(win[0], 0, 2, " Status ");
         mvwprintw(win[0], 1, 2, "Input");
-        mvwprintw(win[0], 1, floor(win0spcg * win0w), "Output");
+        mvwprintw(win[0], 1, 1 * floor(win0spcg * win0w), "Output");
         mvwprintw(win[0], 1, 2 * floor(win0spcg * win0w), "Scan");
         mvwprintw(win[0], 1, 3 * floor(win0spcg * win0w), "Step");
-        mvwprintw(win[0], win0h - 1, win0w - 10, " %dx%d ", win0w, win0h);
+        mvwprintw(win[0], 1, 4 * floor(win0spcg * win0w), "Target");
+        // mvwprintw(win[0], win0h - 1, win0w - 10, " %dx%d ", win0w, win0h);
         wrefresh(win[0]);
     }
 
