@@ -337,12 +337,11 @@ ret_menu1:
                 {
                     if (sel == 3)
                     {
-                        if (newloc > 1000)
-                            newloc = 1000;
-                        if (newloc < -1000)
-                            newloc = -1000;
                         newloc = ((int)scanmot_current_pos) + newloc;
-                        move = true;
+                        if (newloc <= 0)
+                            newloc = scanmot_current_pos;
+                        else
+                            move = true;
                     }
                     else if (sel == 2 && newloc > 0)
                     {
