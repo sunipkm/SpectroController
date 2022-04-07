@@ -206,7 +206,7 @@ private:
     static void goToPosInternal(ScanMotor *self, int target, bool override)
     {
         Adafruit::MotorDir dir = Adafruit::MotorDir::RELEASE;
-        int _target;
+        int _target = target;
         if (target <= 0)
             dbprintlf("Target position %d, invalid.", target);
         if (target > self->absPos)
@@ -214,7 +214,6 @@ private:
         else if (target < self->absPos)
         {
             dir = self->dir1; // towards SW1
-            _target = target;
             if (!override)
                 target -= 400; // 2 revs for backlash
         }
