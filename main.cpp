@@ -62,6 +62,7 @@ static void InvalidateCurrentPos();
 static void ValidateCurrentPos();
 static void MotorSetup();
 static void MotorCleanup();
+static void Win0_Update_Handler();
 
 void sighandler(int sig)
 {
