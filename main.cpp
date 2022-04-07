@@ -195,20 +195,20 @@ int main()
         {
             if (smotor->isMoving()) // print motor stop message
             {
-                mvwprintw(win[1], menu1_n_choices + 4, 4, "Info: Scanning motor is moving.");
-                mvwprintw(win[1], menu1_n_choices + 5, 4, "      Press F4, S, Q or Space to stop.");
+                mvwprintw(win[1], menu1_n_choices + 3, 4, "Info: Scanning motor is moving.");
+                mvwprintw(win[1], menu1_n_choices + 4, 4, "      Press F4, S, Q or Space to stop.");
             }
             else // print iomotor message
             {
-                mvwprintw(win[1], menu1_n_choices + 4, 4, "Info: IO Ports are changing.");
-                mvwprintw(win[1], menu1_n_choices + 5, 4, "      Operations disabled.");
+                mvwprintw(win[1], menu1_n_choices + 3, 4, "Info: IO Ports are changing.");
+                mvwprintw(win[1], menu1_n_choices + 4, 4, "      Operations disabled.");
             }
             wrefresh(win[1]);
         }
         else if (old_moving && !moving) // clear message
         {
+            mvwprintw(win[1], menu1_n_choices + 3, 4, "                                        ");
             mvwprintw(win[1], menu1_n_choices + 4, 4, "                                        ");
-            mvwprintw(win[1], menu1_n_choices + 5, 4, "                                        ");
             wrefresh(win[1]);
         }
         // update
@@ -239,32 +239,33 @@ int main()
         }
         if (redraw)
         {
-            mvwprintw(win[0], 2, 2, "        ");
-            mvwprintw(win[0], 2, 2, "%s", iomot_in_port.c_str());
+            int spcg = (win_w[0] - 54) / 3;
+            mvwprintw(win[0], 2, 4, "              ");
+            mvwprintw(win[0], 2, 4, "Input : %s", iomot_in_port.c_str());
 
-            mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "        ");
-            mvwprintw(win[0], 2, floor(win0spcg * floor(win_w[0] * cols)), "%s", iomot_out_port.c_str());
+            mvwprintw(win[0], 4, 4, "              ");
+            mvwprintw(win[0], 4, 4, "Output: %s", iomot_out_port.c_str());
 
-            mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "        ");
-            mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "%s", scanmot_status.c_str());
+            mvwprintw(win[0], 1, 4 + 14 + spcg, "      ");
+            mvwprintw(win[0], 1, 4 + 14 + spcg, "%s", scanmot_status.c_str());
 
-            mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%d", scanmot_current_pos);
-            mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
-            mvwprintw(win[0], 4, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
+            mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg, "          ");
+            mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg, "%010d", scanmot_current_pos);
+            mvwprintw(win[0], 3, 4 + 14 + spcg + 6 + spcg, "          ");
+            mvwprintw(win[0], 3, 4 + 14 + spcg + 6 + spcg, "%05.2f", STEP_TO_CTR(scanmot_current_pos));
+            mvwprintw(win[0], 4, 4 + 14 + spcg + 6 + spcg, "          ");
             if (scanmot_home_pos > 0)
-                mvwprintw(win[0], 4, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
+                mvwprintw(win[0], 4, 4 + 14 + spcg + 6 + spcg, "%04.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
 
-            mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
+            mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
             if (newloc != scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%d", newloc);
-            mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
+                mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "%010d", newloc);
+            mvwprintw(win[0], 3, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
             if (newloc != scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(newloc));
-            mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
+                mvwprintw(win[0], 3, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "%05.2f", STEP_TO_CTR(newloc));
+            mvwprintw(win[0], 4, 4 * 4 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
             if (scanmot_home_pos > 0 && newloc != scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
+                mvwprintw(win[0], 4, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "%04.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
 
             wrefresh(win[0]);
             // redraw = false;
@@ -867,11 +868,15 @@ void WindowsInit(WINDOW *win[], float win_w[], float win_h[], int rows, int cols
     win[0] = InitWin(0, 0, win0w, win0h);
     {
         mvwprintw(win[0], 0, 2, " Status ");
-        mvwprintw(win[0], 1, 2, "Input");
-        mvwprintw(win[0], 1, 1 * floor(win0spcg * win0w), "Output");
-        mvwprintw(win[0], 1, 2 * floor(win0spcg * win0w), "Scan");
-        mvwprintw(win[0], 1, 3 * floor(win0spcg * win0w), "Current");
-        mvwprintw(win[0], 1, 4 * floor(win0spcg * win0w), "Target");
+        // mvwprintw(win[0], 1, 2, "Input");
+        // mvwprintw(win[0], 1, 1 * floor(win0spcg * win0w), "Output");
+        // mvwprintw(win[0], 1, 2 * floor(win0spcg * win0w), "Scan");
+        // mvwprintw(win[0], 1, 3 * floor(win0spcg * win0w), "Current");
+        // mvwprintw(win[0], 1, 4 * floor(win0spcg * win0w), "Target");
+        int spcg = (win0w - 54) / 3;
+        mvwprintw(win[0], 1, 4 + 14 + spcg, " Scan ");
+        mvwprintw(win[0], 1, 4 + 14 + spcg + 6 + spcg, " Current ");
+        mvwprintw(win[0], 1, 4 + 14 + spcg + 6 + spcg + 10 + spcg, " Target ");
         // mvwprintw(win[0], win0h - 1, win0w - 10, " %dx%d ", win0w, win0h);
         wrefresh(win[0]);
     }

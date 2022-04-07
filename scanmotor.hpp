@@ -154,9 +154,9 @@ public:
         if (state == ScanMotor_State::ERROR)
             motorst = "Error";
         else if (state == ScanMotor_State::LS1)
-            motorst = "Hit Limit SW 1";
+            motorst = "LS1";
         else if (state == ScanMotor_State::LS2)
-            motorst = "Hit Limit SW 2";
+            motorst = "LS2";
         else if (state == ScanMotor_State::GOOD && moving)
             motorst = "Moving";
         else if (state == ScanMotor_State::GOOD && !moving)
