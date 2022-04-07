@@ -76,13 +76,14 @@ IOMotor *iomot_out = nullptr;
 IOMotor *iomot_in = nullptr;
 
 char *menu1_choices_desc[] = {
-    (char *)"Select Input Port",    // 1
-    (char *)"Select Output Port",   // 2
-    (char *)"Go to Location",       // 3
-    (char *)"Go to Wavelength",     // 4
-    (char *)"Step Relative",        // 5
-    (char *)"Update Home Location", // 6
-    (char *)"Exit Program",         // 7
+    (char *)"Select Input Port",     // 1
+    (char *)"Select Output Port",    // 2
+    (char *)"Go to Location",        // 3
+    (char *)"Go to Wavelength",      // 4
+    (char *)"Step Relative (steps)", // 5
+    (char *)"Step Relative (nm)",    // 6
+    (char *)"Update Home Location",  // 7
+    (char *)"Exit Program",          // 8
     (char *)NULL};
 
 char *menu_choices_idx[] = {
@@ -93,6 +94,7 @@ char *menu_choices_idx[] = {
     (char *)"5:",
     (char *)"6:",
     (char *)"7:",
+    (char *)"  ",
     (char *)NULL};
 
 char *port_menu_desc[] = {
@@ -254,13 +256,13 @@ int main()
                 mvwprintw(win[0], 4, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
 
             mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (newloc != (int)scanmot_current_pos && newloc > 0)
+            if (newloc != scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%d", newloc);
             mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (newloc != (int)scanmot_current_pos && newloc > 0)
+            if (newloc != scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(newloc));
             mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (scanmot_home_pos > 0 && newloc != (int)scanmot_current_pos && newloc > 0)
+            if (scanmot_home_pos > 0 && newloc != scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
 
             wrefresh(win[0]);
@@ -339,9 +341,10 @@ int main()
                     }
                 }
             }
-            else if (sel == 2 || sel == 3 || sel == 4) // abs loc/abs wave/rel position select
+            else if (sel == 2 || sel == 3 || sel == 4 || sel == 5) // abs loc/abs wave/rel position/rel wave select
             {
                 bool move = false;
+                newloc = 0;
                 unpost_menu(menu1);
                 wclear(win[1]);
                 mvwprintw(win[1], 0, 2, " Location Input ");
@@ -352,7 +355,7 @@ int main()
                 }
                 else if (sel == 4)
                 {
-                    mvwprintw(win[1], 2, 2, "Enter relative position (current: %d): ", scanmot_current_pos);
+                    mvwprintw(win[1], 2, 2, "Enter relative position (step, current: %d): ", scanmot_current_pos);
                 }
                 else if (sel == 3 && scanmot_home_pos > 0)
                 {
@@ -362,6 +365,20 @@ int main()
                 else if (sel == 3 && scanmot_home_pos <= 0)
                 {
                     goto menu1_from_pos;
+                }
+                else if (sel == 5)
+                {
+                    double wl_delta = 0;
+                    double target_wl = -100;
+                    if (scanmot_home_pos > 0)
+                    {
+                        target_wl = STEP_TO_LAM * (scanmot_current_pos - scanmot_home_pos);
+                        mvwprintw(win[1], 2, 2, "Enter relative position (nm, current: %.3lf): ", target_wl);
+                    }
+                    else
+                    {
+                        mvwprintw(win[1], 2, 2, "Enter relative position (nm, current: %d): ", scanmot_current_pos);
+                    }
                 }
                 echo();
                 wrefresh(win[1]);
@@ -381,13 +398,19 @@ int main()
                         move = true;      // indicate movement
                     }
                 }
+                else if (sel == 5)
+                {
+                    double rel_wl = 0;
+                    wscanw(win[1], "%lf", &rel_wl);
+                    newloc = round(rel_wl / STEP_TO_LAM);
+                }
                 noecho();
                 wtimeout(win[1], 5);
                 if (newloc != 0)
                 {
-                    if (sel == 4)
+                    if (sel == 4 || sel == 5)
                     {
-                        newloc = ((int)scanmot_current_pos) + newloc;
+                        newloc = scanmot_current_pos + newloc;
                         if (newloc <= 0)
                             newloc = scanmot_current_pos;
                         else
@@ -411,11 +434,11 @@ int main()
                 post_menu(menu1);
                 wrefresh(win[1]);
             }
-            else if (sel == 5) // home location
+            else if (sel == 6) // home location
             {
                 int home_loc = 0;
                 unpost_menu(menu1);
-get_home_pos:
+            get_home_pos:
                 wclear(win[1]);
                 mvwprintw(win[1], 0, 2, " Home Location Input ");
                 box(win[1], 0, 0);
@@ -443,7 +466,7 @@ get_home_pos:
                 post_menu(menu1);
                 wrefresh(win[1]);
             }
-            else if (sel == 6) // exit
+            else if (sel == 7) // exit
             {
                 break;
             }
