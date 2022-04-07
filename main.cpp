@@ -240,32 +240,32 @@ int main()
         if (redraw)
         {
             int spcg = (win_w[0] * cols - 54) / 3;
-            mvwprintw(win[0], 2, 4, "              ");
-            mvwprintw(win[0], 2, 4, "Input : %s", iomot_in_port.c_str());
+            mvwprintw(win[0], 2, 2, "              ");
+            mvwprintw(win[0], 2, 2, "Input : %s", iomot_in_port.c_str());
 
-            mvwprintw(win[0], 4, 4, "              ");
-            mvwprintw(win[0], 4, 4, "Output: %s", iomot_out_port.c_str());
+            mvwprintw(win[0], 4, 2, "              ");
+            mvwprintw(win[0], 4, 2, "Output: %s", iomot_out_port.c_str());
 
-            mvwprintw(win[0], 2, 4 + 14 + spcg, "      ");
-            mvwprintw(win[0], 2, 4 + 14 + spcg, "%s", scanmot_status.c_str());
+            mvwprintw(win[0], 2, 2 + 14 + spcg, "      ");
+            mvwprintw(win[0], 2, 2 + 14 + spcg, "%s", scanmot_status.c_str());
 
-            mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg, "          ");
-            mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg, "%d", scanmot_current_pos);
-            mvwprintw(win[0], 3, 4 + 14 + spcg + 6 + spcg, "          ");
-            mvwprintw(win[0], 3, 4 + 14 + spcg + 6 + spcg, "%.2f", STEP_TO_CTR(scanmot_current_pos));
-            mvwprintw(win[0], 4, 4 + 14 + spcg + 6 + spcg, "          ");
+            mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg, "          ");
+            mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg, "%d", scanmot_current_pos);
+            mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg, "          ");
+            mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg, "%.2f", STEP_TO_CTR(scanmot_current_pos));
+            mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg, "          ");
             if (scanmot_home_pos > 0)
-                mvwprintw(win[0], 4, 4 + 14 + spcg + 6 + spcg, "%.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
+                mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg, "%.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
 
-            mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
+            mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
             if (newloc != scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "%d", newloc);
-            mvwprintw(win[0], 3, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
+                mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%d", newloc);
+            mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
             if (newloc != scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 3, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "%.2f", STEP_TO_CTR(newloc));
-            mvwprintw(win[0], 4, 4 * 4 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
+                mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%.2f", STEP_TO_CTR(newloc));
+            mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
             if (scanmot_home_pos > 0 && newloc != scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 4, 4 + 14 + spcg + 6 + spcg + 10 + spcg, "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
+                mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
 
             wrefresh(win[0]);
             // redraw = false;
