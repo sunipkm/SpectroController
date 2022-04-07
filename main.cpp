@@ -874,9 +874,9 @@ void WindowsInit(WINDOW *win[], float win_w[], float win_h[], int rows, int cols
         // mvwprintw(win[0], 1, 3 * floor(win0spcg * win0w), "Current");
         // mvwprintw(win[0], 1, 4 * floor(win0spcg * win0w), "Target");
         int spcg = (win0w - 54) / 3;
-        mvwprintw(win[0], 1, 4 + 14 + spcg, " Scan ");
-        mvwprintw(win[0], 1, 4 + 14 + spcg + 6 + spcg, " Current ");
-        mvwprintw(win[0], 1, 4 + 14 + spcg + 6 + spcg + 10 + spcg, " Target ");
+        mvwprintw(win[0], 1, 2 + 14 + spcg, " Scan ");
+        mvwprintw(win[0], 1, 2 + 14 + spcg + 6 + spcg, " Current ");
+        mvwprintw(win[0], 1, 2 + 14 + spcg + 6 + spcg + 10 + spcg, " Target ");
         // mvwprintw(win[0], win0h - 1, win0w - 10, " %dx%d ", win0w, win0h);
         wrefresh(win[0]);
     }
