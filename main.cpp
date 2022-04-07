@@ -127,7 +127,7 @@ char *scan_menu_idx[] = {
     (char *)"5:",
     (char *)"6:",
     (char *)"7:",
-    (char *)"8:",
+    (char *)" ",
     (char *)NULL};
 
 char *scan_pos_desc[] = {
@@ -139,7 +139,7 @@ char *scan_pos_desc[] = {
 char *scan_pos_idx[] = {
     (char *)"1:",
     (char *)"2:",
-    (char *)"",
+    (char *)" ",
     (char *)NULL};
 
 int menu1_n_choices, menu2_n_choices, menu3_n_choices, menu4_n_choices;
@@ -502,19 +502,19 @@ int main()
                             post_menu(menu1);
                             wrefresh(win[1]);
                         }
-                        else if (idx == 4 && !moving) // trig out
+                        else if (idx == 3 && !moving) // trig out
                         {
                         }
-                        else if (idx == 5 && !moving) // trig in
+                        else if (idx == 4 && !moving) // trig in
                         {
                         }
-                        else if (idx == 6 && !smotor->isMoving()) // start scan
+                        else if (idx == 5 && !smotor->isMoving()) // start scan
                         {
                         }
-                        else if (idx == 7) // cancel scan
+                        else if (idx == 6) // cancel scan
                         {
                         }
-                        else if (idx == 8 && !scan_progress) // exit to menu1
+                        else if (idx == 7 && !scan_progress) // exit to menu1
                         {
                             break;
                         }
