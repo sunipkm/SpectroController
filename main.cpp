@@ -239,15 +239,15 @@ int main()
         }
         if (redraw)
         {
-            int spcg = (win_w[0] - 54) / 3;
+            int spcg = (win_w[0] * cols - 54) / 3;
             mvwprintw(win[0], 2, 4, "              ");
             mvwprintw(win[0], 2, 4, "Input : %s", iomot_in_port.c_str());
 
             mvwprintw(win[0], 4, 4, "              ");
             mvwprintw(win[0], 4, 4, "Output: %s", iomot_out_port.c_str());
 
-            mvwprintw(win[0], 1, 4 + 14 + spcg, "      ");
-            mvwprintw(win[0], 1, 4 + 14 + spcg, "%s", scanmot_status.c_str());
+            mvwprintw(win[0], 2, 4 + 14 + spcg, "      ");
+            mvwprintw(win[0], 2, 4 + 14 + spcg, "%s", scanmot_status.c_str());
 
             mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg, "          ");
             mvwprintw(win[0], 2, 4 + 14 + spcg + 6 + spcg, "%d", scanmot_current_pos);
