@@ -210,16 +210,9 @@ int main()
     // Menu1 nav
     // Makes wgetch nonblocking so the menu isnt hogging all the cycles.
     wtimeout(stdscr, 10);
-    int scanmot_old_pos = scanmot_current_pos;
-    std::string iomot_in_port = iomot_in->getStateStr();
-    std::string iomot_out_port = iomot_out->getStateStr();
-    std::string scanmot_status = smotor->getStateStr();
-    std::string iomot_in_port_old = iomot_in_port, iomot_out_port_old = iomot_out_port, scanmot_status_old = scanmot_status;
-    bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
-    bool old_moving = moving;
     while ((c = wgetch(stdscr)))
     {
-        static bool redraw = true;
+        bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
         if (c == KEY_F(5))
         {
             wrefresh(win[0]);
