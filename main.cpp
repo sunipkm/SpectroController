@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h>
 
 #include "Adafruit/meb_print.h"
 
@@ -368,7 +369,6 @@ int main()
                 }
                 else if (sel == 5)
                 {
-                    double wl_delta = 0;
                     double target_wl = -100;
                     if (scanmot_home_pos > 0)
                     {
