@@ -54,6 +54,7 @@
 
 static int scanmot_current_pos = 0;
 static int scanmot_home_pos = 0;
+static int newloc = 0;
 const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *)"posinfo.bin";
 static int LoadCurrentPos();
@@ -88,7 +89,7 @@ char *menu1_choices_desc[] = {
     (char *)"Exit Program",          // 9
     (char *)NULL};
 
-char *menu_choices_idx[] = {
+char *menu1_choices_idx[] = {
     (char *)"1:",
     (char *)"2:",
     (char *)"3:",
@@ -106,6 +107,43 @@ char *port_menu_desc[] = {
     (char *)"Back",
     (char *)NULL};
 
+char *scan_menu_desc[] = {
+    (char *)"Start",       // 1
+    (char *)"Stop",        // 2
+    (char *)"Step",        // 3
+    (char *)"Trigger Out", // 4
+    (char *)"Trigger In",  // 5
+    (char *)"Start Scan",  // 6
+    (char *)"Cancel Scan", // 7
+    (char *)"Back",        // 8
+    (char *)NULL};
+
+char *scan_menu_idx[] = {
+    (char *)"1:",
+    (char *)"2:",
+    (char *)"3:",
+    (char *)"4:",
+    (char *)"5:",
+    (char *)"6:",
+    (char *)"7:",
+    (char *)"",
+    (char *)NULL};
+
+char *scan_pos_desc[] = {
+    (char *)"Steps",
+    (char *)"Wavelength (nm)",
+    (char *)"Back",
+    (char *)NULL};
+
+char *scan_pos_idx[] = {
+    (char *)"1:",
+    (char *)"2:",
+    (char *)"",
+    (char *)NULL};
+
+int menu1_n_choices, menu2_n_choices, menu3_n_choices, menu4_n_choices;
+int win_rows = 0, win_cols = 0;
+
 int main()
 {
     signal(SIGINT, sighandler);
@@ -116,24 +154,23 @@ int main()
     refresh();
 
     // Initialization and drawing of windows' static elements.
-    int rows = 0, cols = 0;
-    getmaxyx(stdscr, rows, cols);
-    WindowsInit(win, win_w, win_h, rows, cols);
+    getmaxyx(stdscr, win_rows, win_cols);
+    WindowsInit(win, win_w, win_h, win_rows, win_cols);
 
     // Menu1 setup.
-    ITEM **menu1_items, **menu2_items;
+    ITEM **menu1_items, **menu2_items, **menu3_items, **menu4_items;
     int c;
-    MENU *menu1, *menu2;
-    int menu1_n_choices, menu2_n_choices, i;
+    MENU *menu1, *menu2, *menu3, *menu4;
 
     // generate_menu(menu1_items, menu1, menu1_n_choices);
 
     { // Generate the menu.
+        int i;
         menu1_n_choices = ARRAY_SIZE(menu1_choices_desc);
         menu1_items = (ITEM **)calloc(menu1_n_choices, sizeof(ITEM *));
         for (i = 0; i < menu1_n_choices; ++i)
         {
-            menu1_items[i] = new_item(menu_choices_idx[i], menu1_choices_desc[i]);
+            menu1_items[i] = new_item(menu1_choices_idx[i], menu1_choices_desc[i]);
         }
         menu1 = new_menu((ITEM **)menu1_items);
         set_menu_win(menu1, win[1]);
@@ -150,6 +187,23 @@ int main()
             menu2_items[i] = new_item(port_menu_desc[i], "");
         }
         menu2 = new_menu(menu2_items);
+
+        menu3_n_choices = ARRAY_SIZE(scan_menu_desc);
+        menu3_items = (ITEM **)calloc(menu3_n_choices, sizeof(ITEM *));
+        for (i = 0; i < menu3_n_choices; i++)
+        {
+            menu3_items[i] = new_item(scan_menu_idx[i], scan_menu_desc[i]);
+        }
+        menu3 = new_menu(menu3_items);
+        menu3_n_choices = ARRAY_SIZE(scan_menu_desc);
+
+        menu4_n_choices = ARRAY_SIZE(scan_pos_desc);
+        menu4_items = (ITEM **)calloc(menu4_n_choices, sizeof(ITEM *));
+        for (i = 0; i < menu4_n_choices; i++)
+        {
+            menu4_items[i] = new_item(scan_pos_idx[i], scan_pos_desc[i]);
+        }
+        menu4 = new_menu(menu4_items);
     }
 
     // Menu1 nav
@@ -165,113 +219,12 @@ int main()
     while ((c = wgetch(stdscr)))
     {
         static bool redraw = true;
-        static int newloc = 0;
         if (c == KEY_F(5))
         {
             wrefresh(win[0]);
             wrefresh(win[1]);
         }
-        // Check if scan motor is stuck
-        ScanMotor_State smotor_state = smotor->getState();
-        if ((smotor_state == ScanMotor_State::LS1) || (smotor_state == ScanMotor_State::LS2))
-        {
-            if (smotor->isMoving()) // still moving, wait for stop
-                goto skip_reverse;
-            if (smotor_state == ScanMotor_State::LS1) // stuck at LS1
-            {
-                smotor->goToPos(smotor->getPos() + 1000, true);
-            }
-            else if (smotor_state == ScanMotor_State::LS2) // stuck at LS2
-            {
-                smotor->goToPos(smotor->getPos() - 1000, true);
-            }
-            else
-            {
-            }
-        }
-    skip_reverse:
-        // update win 0
-        moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
-        // do things with moving transition
-        if (!old_moving && moving) // print message
-        {
-            if (smotor->isMoving()) // print motor stop message
-            {
-                mvwprintw(win[1], menu1_n_choices + 3, 4, "Info: Scanning motor is moving.");
-                mvwprintw(win[1], menu1_n_choices + 4, 4, "      Press F4, S, Q or Space to stop.");
-            }
-            else // print iomotor message
-            {
-                mvwprintw(win[1], menu1_n_choices + 3, 4, "Info: IO Ports are changing.");
-                mvwprintw(win[1], menu1_n_choices + 4, 4, "      Operations disabled.");
-            }
-            wrefresh(win[1]);
-        }
-        else if (old_moving && !moving) // clear message
-        {
-            mvwprintw(win[1], menu1_n_choices + 3, 4, "                                        ");
-            mvwprintw(win[1], menu1_n_choices + 4, 4, "                                        ");
-            wrefresh(win[1]);
-        }
-        // update
-        old_moving = moving;
-        scanmot_current_pos = smotor->getPos();
-        iomot_in_port = iomot_in->getStateStr();
-        iomot_out_port = iomot_out->getStateStr();
-        scanmot_status = smotor->getStateStr();
-        if (scanmot_old_pos != scanmot_current_pos)
-        {
-            redraw = true;
-            scanmot_old_pos = scanmot_current_pos;
-        }
-        if (iomot_in_port_old != iomot_in_port)
-        {
-            iomot_in_port_old = iomot_in_port;
-            redraw = true;
-        }
-        if (iomot_out_port_old != iomot_out_port)
-        {
-            iomot_out_port_old = iomot_out_port;
-            redraw = true;
-        }
-        if (iomot_in_port_old != iomot_in_port)
-        {
-            iomot_out_port_old = iomot_out_port;
-            redraw = true;
-        }
-        if (redraw)
-        {
-            int spcg = (win_w[0] * cols - 54) / 3;
-            mvwprintw(win[0], 2, 2, "              ");
-            mvwprintw(win[0], 2, 2, "Input : %s", iomot_in_port.c_str());
-
-            mvwprintw(win[0], 4, 2, "              ");
-            mvwprintw(win[0], 4, 2, "Output: %s", iomot_out_port.c_str());
-
-            mvwprintw(win[0], 2, 2 + 14 + spcg, "      ");
-            mvwprintw(win[0], 2, 2 + 14 + spcg, "%s", scanmot_status.c_str());
-
-            mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg, "          ");
-            mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg, "%d", scanmot_current_pos);
-            mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg, "          ");
-            mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg, "%.2f", STEP_TO_CTR(scanmot_current_pos));
-            mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg, "          ");
-            if (scanmot_home_pos > 0)
-                mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg, "%.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
-
-            mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
-            if (newloc != scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%d", newloc);
-            mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
-            if (newloc != scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%.2f", STEP_TO_CTR(newloc));
-            mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
-            if (scanmot_home_pos > 0 && newloc != scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
-
-            wrefresh(win[0]);
-            // redraw = false;
-        }
+        Win0_Update_Handler();
         // Menu handling.
         if (c == KEY_DOWN && !moving)
         {
@@ -471,21 +424,136 @@ int main()
             }
             else if (sel == 7) // set up a scan
             {
+                bool scan_progress = false;
+                unpost_menu(menu1);
+                wclear(win[1]);
+                mvwprintw(win[1], 0, 2, " Scan Menu ");
+                box(win[1], 0, 0);
+                set_menu_win(menu3, win[1]);
+                set_menu_sub(menu3, derwin(win[1], 6, 38, 2, 1));
+                set_menu_mark(menu3, " * ");
+                post_menu(menu3);
+                wrefresh(win[1]);
+                while ((c = wgetch(stdscr)))
+                {
+                    if (c == KEY_F(5))
+                    {
+                        wrefresh(win[0]);
+                        wrefresh(win[1]);
+                    }
+                    Win0_Update_Handler();
+                    if (c == KEY_DOWN)
+                    {
+                        menu_driver(menu3, REQ_DOWN_ITEM);
+                        wrefresh(win[1]);
+                    }
+                    else if (c == KEY_UP)
+                    {
+                        menu_driver(menu3, REQ_UP_ITEM);
+                        wrefresh(win[1]);
+                    }
+                    else if (c == '\n')
+                    {
+                        int idx = item_index(current_item(menu3));
+                        if (idx >= 0 && idx < 3 && !scan_progress) // start/stop/step input
+                        {
+                            unpost_menu(menu1);
+                            wclear(win[1]);
+                            if (idx == 0)
+                                mvwprintw(win[1], 0, 2, " Start Position ");
+                            else if (idx == 1)
+                                mvwprintw(win[1], 0, 2, " Stop Position ");
+                            else if (idx == 2)
+                                mvwprintw(win[1], 0, 2, " Scan Step Size ");
+                            box(win[1], 0, 0);
+                            set_menu_win(menu4, win[1]);
+                            set_menu_sub(menu4, derwin(win[1], 6, 38, 2, 1));
+                            set_menu_mark(menu4, " * ");
+                            post_menu(menu4);
+                            wrefresh(win[1]);
+                            while ((c == wgetch(stdscr)))
+                            {
+                                if (c == KEY_DOWN)
+                                {
+                                    menu_driver(menu4, REQ_DOWN_ITEM);
+                                    wrefresh(win[1]);
+                                }
+                                else if (c == KEY_UP)
+                                {
+                                    menu_driver(menu4, REQ_UP_ITEM);
+                                    wrefresh(win[1]);
+                                }
+                                else if (c == '\n')
+                                {
+                                    int sel2 = item_index(current_item(menu4));
+                                    if (sel2 == 0)
+                                    {
+                                    }
+                                    else if (sel2 == 1)
+                                    {
+                                    }
+                                    else if (sel2 == 3)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                            unpost_menu(menu4);
+                            wclear(win[1]);
+                            box(win[1], 0, 0);
+                            mvwprintw(win[1], 0, 2, " Options ", sel);
+                            set_menu_win(menu1, win[1]);
+                            set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
+                            set_menu_mark(menu1, " * ");
+                            post_menu(menu1);
+                            wrefresh(win[1]);
+                        }
+                        else if (idx == 4 && !moving) // trig out
+                        {
+                        }
+                        else if (idx == 5 && !moving) // trig in
+                        {
+                        }
+                        else if (idx == 6 && !smotor->isMoving()) // start scan
+                        {
+                        }
+                        else if (idx == 7) // cancel scan
+                        {
+                        }
+                        else if (idx == 8 && !scan_progress) // exit to menu1
+                        {
+                            break;
+                        }
+                    }
+                    else if ((c == '\n' || c == 's' || c == 'S' || c == ' ' || c == 'q' || c == 'Q' || c == KEY_F(4)) && smotor->isMoving()) // emergency stop
+                    {
+                        smotor->eStop();
+                    }
+                }
+                unpost_menu(menu3);
+                wclear(win[1]);
+                box(win[1], 0, 0);
+                mvwprintw(win[1], 0, 2, " Options ", sel);
+                set_menu_win(menu1, win[1]);
+                set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
+                set_menu_mark(menu1, " * ");
+                post_menu(menu1);
+                wrefresh(win[1]);
                 // [Menu 3]
                 // start
-                    // [Menu 4]
-                    // step or nm
-                        // input
+                // [Menu 4]
+                // step or nm
+                // input
                 // stop
-                    // step or nm
-                        // input
+                // step or nm
+                // input
                 // step
-                    // step or nm
-                        // input
+                // step or nm
+                // input
                 // trig out properties
-                    // [Menu 5]
-                    // Pulse length
-                    // Toggle
+                // [Menu 5]
+                // Pulse length
+                // Toggle
                 // enable trig in
             }
             else if (sel == 8) // exit
@@ -506,8 +574,8 @@ int main()
             // ncurses_init();
             // refresh();
 
-            // getmaxyx(stdscr, rows, cols);
-            // WindowsInit(win, win_w, win_h, rows, cols);
+            // getmaxyx(stdscr, win_rows, cols);
+            // WindowsInit(win, win_w, win_h, win_rows, cols);
 
             // { // Generate the menu.
             //     menu1_n_choices = ARRAY_SIZE(menu1_choices);
@@ -540,6 +608,127 @@ int main()
     scanmot_current_pos = smotor->getPos();
 
     return 0;
+}
+
+static void Win0_Update_Handler()
+{
+    static bool firstrun = true, redraw = true, old_moving = true;
+    bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
+    std::string iomot_in_port = iomot_in->getStateStr();
+    std::string iomot_out_port = iomot_out->getStateStr();
+    std::string scanmot_status = smotor->getStateStr();
+    static std::string iomot_in_port_old, iomot_out_port_old, scanmot_status_old;
+    static int scanmot_old_pos;
+    if (firstrun)
+    {
+        firstrun = false;
+        old_moving = moving;
+        scanmot_old_pos = scanmot_current_pos;
+        iomot_in_port_old = iomot_in_port;
+        iomot_out_port_old = iomot_out_port;
+        scanmot_status_old = scanmot_status;
+    }
+    // Check if scan motor is stuck
+    ScanMotor_State smotor_state = smotor->getState();
+    if ((smotor_state == ScanMotor_State::LS1) || (smotor_state == ScanMotor_State::LS2))
+    {
+        if (smotor->isMoving()) // still moving, wait for stop
+            goto skip_reverse;
+        if (smotor_state == ScanMotor_State::LS1) // stuck at LS1
+        {
+            smotor->goToPos(smotor->getPos() + 1000, true);
+        }
+        else if (smotor_state == ScanMotor_State::LS2) // stuck at LS2
+        {
+            smotor->goToPos(smotor->getPos() - 1000, true);
+        }
+        else
+        {
+        }
+    }
+skip_reverse:
+    // update win 0
+    moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
+    // do things with moving transition
+    if (!old_moving && moving) // print message
+    {
+        if (smotor->isMoving()) // print motor stop message
+        {
+            mvwprintw(win[1], menu1_n_choices + 3, 4, "Info: Scanning motor is moving.");
+            mvwprintw(win[1], menu1_n_choices + 4, 4, "      Press F4, S, Q or Space to stop.");
+        }
+        else // print iomotor message
+        {
+            mvwprintw(win[1], menu1_n_choices + 3, 4, "Info: IO Ports are changing.");
+            mvwprintw(win[1], menu1_n_choices + 4, 4, "      Operations disabled.");
+        }
+        wrefresh(win[1]);
+    }
+    else if (old_moving && !moving) // clear message
+    {
+        mvwprintw(win[1], menu1_n_choices + 3, 4, "                                        ");
+        mvwprintw(win[1], menu1_n_choices + 4, 4, "                                        ");
+        wrefresh(win[1]);
+    }
+    // update
+    old_moving = moving;
+    scanmot_current_pos = smotor->getPos();
+    iomot_in_port = iomot_in->getStateStr();
+    iomot_out_port = iomot_out->getStateStr();
+    scanmot_status = smotor->getStateStr();
+    if (scanmot_old_pos != scanmot_current_pos)
+    {
+        redraw = true;
+        scanmot_old_pos = scanmot_current_pos;
+    }
+    if (iomot_in_port_old != iomot_in_port)
+    {
+        iomot_in_port_old = iomot_in_port;
+        redraw = true;
+    }
+    if (iomot_out_port_old != iomot_out_port)
+    {
+        iomot_out_port_old = iomot_out_port;
+        redraw = true;
+    }
+    if (iomot_in_port_old != iomot_in_port)
+    {
+        iomot_out_port_old = iomot_out_port;
+        redraw = true;
+    }
+    if (redraw)
+    {
+        int spcg = (win_w[0] * win_cols - 54) / 3;
+        mvwprintw(win[0], 2, 2, "              ");
+        mvwprintw(win[0], 2, 2, "Input : %s", iomot_in_port.c_str());
+
+        mvwprintw(win[0], 4, 2, "              ");
+        mvwprintw(win[0], 4, 2, "Output: %s", iomot_out_port.c_str());
+
+        mvwprintw(win[0], 2, 2 + 14 + spcg, "      ");
+        mvwprintw(win[0], 2, 2 + 14 + spcg, "%s", scanmot_status.c_str());
+
+        mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg, "          ");
+        mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg, "%d", scanmot_current_pos);
+        mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg, "          ");
+        mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg, "%.2f", STEP_TO_CTR(scanmot_current_pos));
+        mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg, "          ");
+        if (scanmot_home_pos > 0)
+            mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg, "%.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
+
+        mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
+        if (newloc != scanmot_current_pos && newloc > 0)
+            mvwprintw(win[0], 2, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%d", newloc);
+        mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
+        if (newloc != scanmot_current_pos && newloc > 0)
+            mvwprintw(win[0], 3, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%.2f", STEP_TO_CTR(newloc));
+        mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
+        if (scanmot_home_pos > 0 && newloc != scanmot_current_pos && newloc > 0)
+            mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
+
+        wrefresh(win[0]);
+        // redraw = false;
+    }
 }
 
 static void MotorCleanup()
