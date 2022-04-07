@@ -51,11 +51,11 @@
 #define TRIGIN 18  // GPIO trigger in
 #define TRIGOUT 16 // GPIO trigger out
 
-static unsigned int scanmot_current_pos = 0;
-static unsigned int scanmot_home_pos = 0;
+static int scanmot_current_pos = 0;
+static int scanmot_home_pos = 0;
 const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *)"posinfo.bin";
-static unsigned int LoadCurrentPos();
+static int LoadCurrentPos();
 static void InvalidateCurrentPos();
 static void ValidateCurrentPos();
 static void MotorSetup();
@@ -106,7 +106,7 @@ int main()
     signal(SIGINT, sighandler);
     atexit(MotorCleanup);
     MotorSetup();
-    bprintlf(YELLOW_FG "Current pos: %u == %.2f, launching UI...", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
+    bprintlf(YELLOW_FG "Current pos: %d == %.2f, launching UI...", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     ncurses_init();
     refresh();
 
@@ -150,7 +150,7 @@ int main()
     // Menu1 nav
     // Makes wgetch nonblocking so the menu isnt hogging all the cycles.
     wtimeout(stdscr, 10);
-    unsigned int scanmot_old_pos = scanmot_current_pos;
+    int scanmot_old_pos = scanmot_current_pos;
     std::string iomot_in_port = iomot_in->getStateStr();
     std::string iomot_out_port = iomot_out->getStateStr();
     std::string scanmot_status = smotor->getStateStr();
@@ -246,7 +246,7 @@ int main()
             mvwprintw(win[0], 2, 2 * floor(win0spcg * floor(win_w[0] * cols)), "%s", scanmot_status.c_str());
 
             mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%u", scanmot_current_pos);
+            mvwprintw(win[0], 2, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%d", scanmot_current_pos);
             mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
             mvwprintw(win[0], 3, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(scanmot_current_pos));
             mvwprintw(win[0], 4, 3 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
@@ -254,13 +254,13 @@ int main()
                 mvwprintw(win[0], 4, 3 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", (scanmot_current_pos - scanmot_home_pos) * STEP_TO_LAM);
 
             mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (newloc != (int) scanmot_current_pos && newloc > 0)
-                mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%u", newloc);
+            if (newloc != (int)scanmot_current_pos && newloc > 0)
+                mvwprintw(win[0], 2, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%d", newloc);
             mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (newloc != (int) scanmot_current_pos && newloc > 0)
+            if (newloc != (int)scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 3, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.2f", STEP_TO_CTR(newloc));
             mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "              ");
-            if (scanmot_home_pos > 0 && newloc != (int) scanmot_current_pos && newloc > 0)
+            if (scanmot_home_pos > 0 && newloc != (int)scanmot_current_pos && newloc > 0)
                 mvwprintw(win[0], 4, 4 * floor(win0spcg * floor(win_w[0] * cols)), "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
 
             wrefresh(win[0]);
@@ -328,8 +328,8 @@ int main()
                     ret_menu1:
                         unpost_menu(menu2);
                         wclear(win[1]);
-                        mvwprintw(win[1], 0, 2, " Options ", sel);
                         box(win[1], 0, 0);
+                        mvwprintw(win[1], 0, 2, " Options ", sel);
                         set_menu_win(menu1, win[1]);
                         set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
                         set_menu_mark(menu1, " * ");
@@ -348,11 +348,11 @@ int main()
                 box(win[1], 0, 0);
                 if (sel == 2)
                 {
-                    mvwprintw(win[1], 2, 2, "Enter absolute position (current: %u): ", scanmot_current_pos);
+                    mvwprintw(win[1], 2, 2, "Enter absolute position (current: %d): ", scanmot_current_pos);
                 }
                 else if (sel == 4)
                 {
-                    mvwprintw(win[1], 2, 2, "Enter relative position (current: %u): ", scanmot_current_pos);
+                    mvwprintw(win[1], 2, 2, "Enter relative position (current: %d): ", scanmot_current_pos);
                 }
                 else if (sel == 3 && scanmot_home_pos > 0)
                 {
@@ -373,12 +373,12 @@ int main()
                 else if (sel == 3 && scanmot_home_pos > 0) // selected 4 and home position is valid
                 {
                     double target_wl = 0;
-                    wscanw(win[1], "%lf", &target_wl); // read target wavelength 
+                    wscanw(win[1], "%lf", &target_wl);                               // read target wavelength
                     int _newloc = round(target_wl / STEP_TO_LAM) + scanmot_home_pos; // get location in steps
-                    if (_newloc >= 0) // valid new location
+                    if (_newloc >= 0)                                                // valid new location
                     {
                         newloc = _newloc; // set destination
-                        move = true; // indicate movement
+                        move = true;      // indicate movement
                     }
                 }
                 noecho();
@@ -402,8 +402,8 @@ int main()
                 }
             menu1_from_pos:
                 wclear(win[1]);
-                mvwprintw(win[1], 0, 2, " Options ");
                 box(win[1], 0, 0);
+                mvwprintw(win[1], 0, 2, " Options ");
                 set_menu_win(menu1, win[1]);
                 set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
                 // set_menu_sub(my_menu, win[1]);
@@ -413,28 +413,29 @@ int main()
             }
             else if (sel == 5) // home location
             {
-                unsigned int home_loc = 0;
+                int home_loc = 0;
                 unpost_menu(menu1);
+get_home_pos:
                 wclear(win[1]);
                 mvwprintw(win[1], 0, 2, " Home Location Input ");
                 box(win[1], 0, 0);
-
-                mvwprintw(win[1], 2, 2, "Enter home position (current: %u): ", scanmot_current_pos);
+                mvwprintw(win[1], 2, 2, "Enter home position (current: %d): ", scanmot_current_pos);
 
                 echo();
                 wrefresh(win[1]);
                 nodelay(win[1], false);
-                
-                wscanw(win[1], "%u", &home_loc);
-                
+
+                wscanw(win[1], "%d", &home_loc);
+                if (home_loc <= 0)
+                    goto get_home_pos;
                 noecho();
                 wtimeout(win[1], 5);
 
                 scanmot_home_pos = home_loc;
-                
+
                 wclear(win[1]);
-                mvwprintw(win[1], 0, 2, " Options ");
                 box(win[1], 0, 0);
+                mvwprintw(win[1], 0, 2, " Options ");
                 set_menu_win(menu1, win[1]);
                 set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
                 // set_menu_sub(my_menu, win[1]);
@@ -538,7 +539,7 @@ static void MotorSetup()
     iomot_in = new IOMotor(iostepper_in, IOMOT_A_LS1, IOMOT_A_LS2, true);
     iomot_out = new IOMotor(iostepper_out, IOMOT_B_LS1, IOMOT_B_LS2, false);
 
-    bprintlf(GREEN_FG "Current pos: %u == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
+    bprintlf(GREEN_FG "Current pos: %d == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     if (smotor->getState() == ScanMotor_State::LS1)
     {
         while (smotor->getState() != ScanMotor_State::GOOD)
@@ -560,14 +561,20 @@ static void MotorSetup()
         dbprintlf("In error state, check wiring.");
         exit(0);
     }
-    bprintlf(GREEN_FG "Setup complete, current pos: %u == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
+    bprintlf(GREEN_FG "Setup complete, current pos: %d == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
 }
 
-static unsigned int LoadCurrentPos()
+static int LoadCurrentPos()
 {
     // 1. Check if file exists, if not ask for step counter and clear all calibration
+    char cwd[PATH_MAX];
+    memset(cwd, 0x0, sizeof(cwd));
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+        dbprintlf("Error getting current directory.");
+    }
     int fd = open(pos_fname, O_RDWR | O_SYNC);
-    unsigned int current_pos = 0;
+    int current_pos = 0;
     if (fd < 0)
     {
         bool valid = false;
@@ -659,7 +666,7 @@ static unsigned int LoadCurrentPos()
     off_t sz = lseek(fd, 0, SEEK_END);
     if (sz != sizeof(scanmot_valid_magic) + sizeof(scanmot_home_pos) + sizeof(scanmot_current_pos))
     {
-        dbprintlf("Size of position file %s: %u, invalid. Please delete the file and restart the program.", pos_fname, (unsigned int)sz);
+        dbprintlf("Size of position file %u, invalid. Please delete the file %s/%s and restart the program.\nNote: Any calibration is lost.", (unsigned int)sz, cwd, pos_fname);
         close(fd);
         exit(0);
     }
@@ -668,7 +675,7 @@ static unsigned int LoadCurrentPos()
     read(fd, &magic, sizeof(scanmot_valid_magic));
     if (magic != scanmot_valid_magic)
     {
-        dbprintlf("Magic 0x%x is invalid. Please delete the file %s and restart the program.", magic, pos_fname);
+        dbprintlf("Magic 0x%x is invalid. Please delete the file %s/%s and restart the program.\nNote: Any calibration is lost.", magic, cwd, pos_fname);
         close(fd);
         exit(0);
     }
@@ -676,7 +683,7 @@ static unsigned int LoadCurrentPos()
     read(fd, &current_pos, sizeof(current_pos));
     if (current_pos == 0)
     {
-        dbprintlf("Current position is 0, please delete the file %s and restart the program.", pos_fname);
+        dbprintlf("Current position is 0, please delete the file %s/%s and restart the program.\nNote: Any calibration is lost.", cwd, pos_fname);
         close(fd);
         exit(0);
     }
@@ -773,7 +780,7 @@ static void ValidateCurrentPos()
         return;
     }
     close(fd);
-    bprintlf(GREEN_FG "Final position: %u == %.2f", scanmot_current_pos, scanmot_current_pos * 40.0 / 10000);
+    bprintlf(GREEN_FG "Final position: %d == %.2f", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     return;
 }
 
@@ -840,7 +847,7 @@ void WindowsInit(WINDOW *win[], float win_w[], float win_h[], int rows, int cols
         mvwprintw(win[0], 1, 2, "Input");
         mvwprintw(win[0], 1, 1 * floor(win0spcg * win0w), "Output");
         mvwprintw(win[0], 1, 2 * floor(win0spcg * win0w), "Scan");
-        mvwprintw(win[0], 1, 3 * floor(win0spcg * win0w), "Step");
+        mvwprintw(win[0], 1, 3 * floor(win0spcg * win0w), "Current");
         mvwprintw(win[0], 1, 4 * floor(win0spcg * win0w), "Target");
         // mvwprintw(win[0], win0h - 1, win0w - 10, " %dx%d ", win0w, win0h);
         wrefresh(win[0]);

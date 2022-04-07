@@ -1,1 +1,1 @@
-# Modified SPEX 1000M Controller
+# Controller for modified SPEX 1000M Monochromator

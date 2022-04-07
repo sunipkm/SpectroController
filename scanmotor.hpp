@@ -206,16 +206,26 @@ private:
     static void goToPosInternal(ScanMotor *self, int target, bool override)
     {
         Adafruit::MotorDir dir = Adafruit::MotorDir::RELEASE;
+        int _target;
         if (target <= 0)
             dbprintlf("Target position %d, invalid.", target);
         if (target > self->absPos)
             dir = self->dir2; // towards SW2
         else if (target < self->absPos)
+        {
             dir = self->dir1; // towards SW1
+            _target = target;
+            if (!override)
+                target -= 400; // 2 revs for backlash
+        }
         else
             return;
         int steps = abs(target - self->absPos);
         self->posDelta(steps, dir, override);
+        if (dir == self->dir1 && !override && self->absPos < _target) // in case of backlash and LS override is not applicable
+        {
+            self->posDelta(_target - self->absPos, self->dir2, override);
+        }
     }
 };
 
