@@ -84,7 +84,8 @@ char *menu1_choices_desc[] = {
     (char *)"Step Relative (steps)", // 5
     (char *)"Step Relative (nm)",    // 6
     (char *)"Update Home Location",  // 7
-    (char *)"Exit Program",          // 8
+    (char *)"Scan Spectra",          // 8
+    (char *)"Exit Program",          // 9
     (char *)NULL};
 
 char *menu_choices_idx[] = {
@@ -95,6 +96,7 @@ char *menu_choices_idx[] = {
     (char *)"5:",
     (char *)"6:",
     (char *)"7:",
+    (char *)"8:",
     (char *)"  ",
     (char *)NULL};
 
@@ -467,7 +469,26 @@ int main()
                 post_menu(menu1);
                 wrefresh(win[1]);
             }
-            else if (sel == 7) // exit
+            else if (sel == 7) // set up a scan
+            {
+                // [Menu 3]
+                // start
+                    // [Menu 4]
+                    // step or nm
+                        // input
+                // stop
+                    // step or nm
+                        // input
+                // step
+                    // step or nm
+                        // input
+                // trig out properties
+                    // [Menu 5]
+                    // Pulse length
+                    // Toggle
+                // enable trig in
+            }
+            else if (sel == 8) // exit
             {
                 break;
             }
