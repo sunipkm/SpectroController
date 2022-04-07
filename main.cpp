@@ -127,7 +127,7 @@ char *scan_menu_idx[] = {
     (char *)"5:",
     (char *)"6:",
     (char *)"7:",
-    (char *)"",
+    (char *)"8:",
     (char *)NULL};
 
 char *scan_pos_desc[] = {
