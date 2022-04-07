@@ -246,7 +246,7 @@ int main()
                     mvwprintw(win[1], 0, 2, " Unknown %d ", sel);
                 box(win[1], 0, 0);
                 set_menu_win(menu2, win[1]);
-                set_menu_sub(menu2, derwin(win[1], 6, 38, 2, 1));
+                set_menu_sub(menu2, derwin(win[1], menu2_n_choices + 2, 38, 2, 1));
                 set_menu_mark(menu2, " * ");
                 post_menu(menu2);
                 wrefresh(win[1]);
@@ -424,7 +424,7 @@ int main()
                 mvwprintw(win[1], 0, 2, " Scan Menu ");
                 box(win[1], 0, 0);
                 set_menu_win(menu3, win[1]);
-                set_menu_sub(menu3, derwin(win[1], 6, 38, 2, 1));
+                set_menu_sub(menu3, derwin(win[1], menu3_n_choices + 2, 38, 2, 1));
                 set_menu_mark(menu3, " * ");
                 post_menu(menu3);
                 wrefresh(win[1]);
@@ -461,7 +461,7 @@ int main()
                                 mvwprintw(win[1], 0, 2, " Scan Step Size ");
                             box(win[1], 0, 0);
                             set_menu_win(menu4, win[1]);
-                            set_menu_sub(menu4, derwin(win[1], 6, 38, 2, 1));
+                            set_menu_sub(menu4, derwin(win[1], menu4_n_choices + 2, 38, 2, 1));
                             set_menu_mark(menu4, " * ");
                             post_menu(menu4);
                             wrefresh(win[1]);
