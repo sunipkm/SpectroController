@@ -477,7 +477,7 @@ int main()
                             set_menu_mark(menu4, " * ");
                             post_menu(menu4);
                             wrefresh(win[1]);
-                            while ((c == wgetch(stdscr)))
+                            while ((c = wgetch(stdscr)))
                             {
                                 if (c == KEY_DOWN)
                                 {
