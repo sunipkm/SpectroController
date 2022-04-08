@@ -849,7 +849,6 @@ skip_reverse:
         mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
         if (scanmot_home_pos > 0 && newloc != scanmot_current_pos && newloc > 0)
             mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
-
         wrefresh(win[0]);
         // redraw = false;
     }
@@ -1211,6 +1210,12 @@ void WindowsInit(WINDOW *win[], float win_w[], float win_h[], int rows, int cols
         mvwprintw(win[0], 1, 2 + 14 + spcg, " Scan ");
         mvwprintw(win[0], 1, 2 + 14 + spcg + 6 + spcg, " Current ");
         mvwprintw(win[0], 1, 2 + 14 + spcg + 6 + spcg + 10 + spcg, " Target ");
+        char *separator;
+        separator = (char *)calloc(win_cols - 4 + 1, 1);
+        for (int i = 0; i < win_cols - 4; i++)
+            separator[i] = '-';
+        mvwprintw(win[0], 5, 2, "%s", separator);
+        free(separator);
         // mvwprintw(win[0], win0h - 1, win0w - 10, " %dx%d ", win0w, win0h);
         wrefresh(win[0]);
     }
