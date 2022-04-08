@@ -158,14 +158,9 @@ int main()
     // check screen size is valid
     initscr();
     getmaxyx(stdscr, win_rows, win_cols);
-    if (win_rows < MIN_ROWS)
+    if ((win_rows < MIN_ROWS) || (win_cols < MIN_COLS))
     {
-        dbprintlf(RED_FG "Window requires at least %d rows.", MIN_ROWS);
-        goto prog_cleanup;
-    }
-    if (win_cols < MIN_COLS)
-    {
-        dbprintlf(RED_FG "Window requires at least %d columns.", MIN_COLS);
+        bprintlf(RED_FG "Error: Terminal size must be at least %d x %d", MIN_COLS, MIN_ROWS);
         goto prog_cleanup;
     }
 
