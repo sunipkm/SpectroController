@@ -215,7 +215,7 @@ private:
         {
             dir = self->dir1; // towards SW1
             if (!override)
-                target -= 400; // 2 revs for backlash
+                target -= 200; // 1 rev for backlash
         }
         else
             return;

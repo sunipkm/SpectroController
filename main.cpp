@@ -238,13 +238,13 @@ int main()
                 // Generate the menu.
                 unpost_menu(menu1);
                 wclear(win[1]);
+                box(win[1], 0, 0);
                 if (sel == 0)
                     mvwprintw(win[1], 0, 2, " Input Port ");
                 else if (sel == 1)
                     mvwprintw(win[1], 0, 2, " Output Port ");
                 else
                     mvwprintw(win[1], 0, 2, " Unknown %d ", sel);
-                box(win[1], 0, 0);
                 set_menu_win(menu2, win[1]);
                 set_menu_sub(menu2, derwin(win[1], menu2_n_choices + 2, 38, 2, 1));
                 set_menu_mark(menu2, " * ");
@@ -298,8 +298,8 @@ int main()
                 newloc = 0;
                 unpost_menu(menu1);
                 wclear(win[1]);
-                mvwprintw(win[1], 0, 2, " Location Input ");
                 box(win[1], 0, 0);
+                mvwprintw(win[1], 0, 2, " Location Input ");
                 if (sel == 2)
                 {
                     mvwprintw(win[1], 2, 2, "Enter absolute position (current: %d): ", scanmot_current_pos);
@@ -390,8 +390,8 @@ int main()
                 unpost_menu(menu1);
             get_home_pos:
                 wclear(win[1]);
-                mvwprintw(win[1], 0, 2, " Home Location Input ");
                 box(win[1], 0, 0);
+                mvwprintw(win[1], 0, 2, " Home Location Input ");
                 mvwprintw(win[1], 2, 2, "Enter home position (current: %d): ", scanmot_current_pos);
 
                 echo();
@@ -421,8 +421,8 @@ int main()
                 bool scan_progress = false;
                 unpost_menu(menu1);
                 wclear(win[1]);
-                mvwprintw(win[1], 0, 2, " Scan Menu ");
                 box(win[1], 0, 0);
+                mvwprintw(win[1], 0, 2, " Scan Menu ");
                 set_menu_win(menu3, win[1]);
                 set_menu_sub(menu3, derwin(win[1], menu3_n_choices + 2, 38, 2, 1));
                 set_menu_mark(menu3, " * ");
@@ -451,15 +451,15 @@ int main()
                         int idx = item_index(current_item(menu3));
                         if (idx >= 0 && idx < 3 && !scan_progress) // start/stop/step input
                         {
-                            unpost_menu(menu1);
+                            unpost_menu(menu3);
                             wclear(win[1]);
+                            box(win[1], 0, 0);
                             if (idx == 0)
                                 mvwprintw(win[1], 0, 2, " Start Position ");
                             else if (idx == 1)
                                 mvwprintw(win[1], 0, 2, " Stop Position ");
                             else if (idx == 2)
                                 mvwprintw(win[1], 0, 2, " Scan Step Size ");
-                            box(win[1], 0, 0);
                             set_menu_win(menu4, win[1]);
                             set_menu_sub(menu4, derwin(win[1], menu4_n_choices + 2, 38, 2, 1));
                             set_menu_mark(menu4, " * ");
@@ -495,11 +495,11 @@ int main()
                             unpost_menu(menu4);
                             wclear(win[1]);
                             box(win[1], 0, 0);
-                            mvwprintw(win[1], 0, 2, " Options ", sel);
-                            set_menu_win(menu1, win[1]);
-                            set_menu_sub(menu1, derwin(win[1], menu1_n_choices + 1, 38, 2, 1));
-                            set_menu_mark(menu1, " * ");
-                            post_menu(menu1);
+                            mvwprintw(win[1], 0, 2, " Scan Menu ", sel);
+                            set_menu_win(menu3, win[1]);
+                            set_menu_sub(menu3, derwin(win[1], menu3_n_choices + 1, 38, 2, 1));
+                            set_menu_mark(menu3, " * ");
+                            post_menu(menu3);
                             wrefresh(win[1]);
                         }
                         else if (idx == 3 && !moving) // trig out
