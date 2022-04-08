@@ -942,6 +942,8 @@ skip_reverse:
             mvwprintw(win[0], 5, ((int)(win_cols * win_w[0])) / 2 - 5, "----------");
         }
 
+        for (int j = 0; j < 5; j++)
+            mvwprintw(win[0], 7, 2 + j * (10 + spcg), "          ");
         if (scanmot_home_pos > 0 && scan_start > 0)
             mvwprintw(win[0], 7, 2 + 0 * (10 + spcg) ,"%4.2f nm", (scan_start - scanmot_home_pos) * STEP_TO_LAM);
         else
