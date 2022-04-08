@@ -562,13 +562,13 @@ int main()
                                         {
                                             wscanw(win[1], "%d", &input_steps);
                                         }
-                                        else if ((sel2 == 1) && ((idx == 2) || (idx < 2) && (scanmot_home_pos > 0))) // home position set
+                                        else if ((sel2 == 1) && (((idx == 2) || ((idx < 2) && (scanmot_home_pos > 0))))) // home position set
                                         {
                                             double input_wl = 0;
                                             wscanw(win[1], "%lf", &input_wl);
                                             input_steps = round(input_wl / STEP_TO_LAM) + scanmot_home_pos;
                                         }
-                                        else if ((sel2 ==1) && (!((idx < 2) && (scanmot_home_pos > 0)))) // home position not set
+                                        else if ((sel2 == 1) && (!((idx < 2) && (scanmot_home_pos > 0)))) // home position not set
                                         {
                                             err_msg = "Start/Stop position can not be in nanometers\nunless home position is set.";
                                             goto start_scan_menu;
