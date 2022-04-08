@@ -160,7 +160,7 @@ int main()
     getmaxyx(stdscr, win_rows, win_cols);
     if ((win_rows < MIN_ROWS) || (win_cols < MIN_COLS))
     {
-        bprintlf(RED_FG "Error: Terminal size must be at least " YELLOW_FG "%d" RED_FG " x " YELLOW_FG "%d" RED_FG ", current size %d x %d.", MIN_COLS, MIN_ROWS);
+        bprintlf(RED_FG "Error: Terminal size must be at least " YELLOW_FG "%d" RED_FG " x " YELLOW_FG "%d" RED_FG ", current size %d x %d.", MIN_COLS, MIN_ROWS, win_cols, win_rows);
         goto prog_cleanup;
     }
 
