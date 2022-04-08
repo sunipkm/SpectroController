@@ -419,7 +419,14 @@ int main()
             else if (sel == 7) // set up a scan
             {
                 bool scan_progress = false;
+                int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10; // step gap is measured in seconds
+                std::string err_msg = "";
                 unpost_menu(menu1);
+            start_scan_menu:
+                if (err_msg.length()) // coming from menu4
+                {
+                    unpost_menu(menu4);
+                }
                 wclear(win[1]);
                 box(win[1], 0, 0);
                 mvwprintw(win[1], 0, 2, " Scan Menu ");
@@ -428,6 +435,11 @@ int main()
                 set_menu_mark(menu3, " * ");
                 post_menu(menu3);
                 wrefresh(win[1]);
+                if (err_msg.length())
+                {
+                    mvwprintw(win[1], 2, menu3_n_choices + 2, "Info: %s", err_msg.c_str());
+                    err_msg = "";
+                }
                 while ((c = wgetch(stdscr)))
                 {
                     if (c == KEY_F(5))
@@ -480,13 +492,92 @@ int main()
                                 else if (c == '\n')
                                 {
                                     int sel2 = item_index(current_item(menu4));
-                                    if (sel2 == 0)
+                                    if (sel2 == 0 || sel2 == 1) // clear menu4, present entry prompt
                                     {
+                                        unpost_menu(menu4);
+                                        wclear(win[1]);
+                                        box(win[1], 0, 0);
+                                        if (idx == 0)
+                                        {
+                                            mvwprintw(win[1], 0, 2, " Start Position ");
+                                            mvwprintw(win[1], 2, 2, "Enter starting position ");
+                                        }
+                                        else if (idx == 1)
+                                        {
+                                            mvwprintw(win[1], 0, 2, " Stop Position ");
+                                            mvwprintw(win[1], 2, 2, "Enter stopping position ");
+                                        }
+                                        else if (idx == 2)
+                                        {
+                                            mvwprintw(win[1], 0, 2, " Scan Step Size ");
+                                            mvwprintw(win[1], 2, 2, "Enter scan step size ");
+                                        }
+                                        if (sel2 == 0)
+                                        {
+                                            wprintw(win[1], "(steps): ");
+                                        }
+                                        else if (sel2 == 1)
+                                        {
+                                            wprintw(win[1], "(nm): ");
+                                        }
+                                        echo();
+                                        nodelay(win[1], false);
+                                        wrefresh(win[1]);
+                                        // ready to take inputs
+                                        int input_steps = 0;
+                                        if (sel2 == 0)
+                                        {
+                                            wscanw(win[1], "%d", &input_steps);
+                                        }
+                                        else if (sel2 == 1)
+                                        {
+                                            double input_wl = 0;
+                                            wscanw(win[1], "%lf", &input_wl);
+                                            input_steps = round(input_wl / STEP_TO_LAM);
+                                        }
+                                        noecho();
+                                        wtimeout(win[1], 5); // reinstate delay
+                                        // put inputs into start, stop, step
+                                        if (idx == 0) // start
+                                        {
+                                            if (input_steps <= 0)
+                                            {
+                                                err_msg = "Start position can not be\nzero or negative.";
+                                                goto start_scan_menu;
+                                            }
+                                            scan_start = input_steps;
+                                        }
+                                        else if (idx == 1) // stop
+                                        {
+                                            if (input_steps <= 0)
+                                            {
+                                                err_msg = "Stop position can not be\nzero or negative.";
+                                                goto start_scan_menu;
+                                            }
+                                            else if (input_steps <= scan_start)
+                                            {
+                                                err_msg = "Stop position can not be\nbelow starting position.";
+                                                goto start_scan_menu;
+                                            }
+                                            scan_stop = input_steps;
+                                        }
+                                        else if (idx == 3) // step
+                                        {
+                                            if (input_steps <= 0)
+                                            {
+                                                err_msg = "Step size can not be\nzero or negative.";
+                                                goto start_scan_menu;
+                                            }
+                                            else if (((scan_stop - scan_start) / input_steps) < 2)
+                                            {
+                                                err_msg = "Step size too large or\nscan range too small.";
+                                                goto start_scan_menu;
+                                            }
+                                            scan_step = input_steps;
+                                        }
+                                        break;
                                     }
-                                    else if (sel2 == 1)
-                                    {
-                                    }
-                                    else if (sel2 == 3)
+                                    else if (sel2 == 3) // back to menu 3
                                     {
                                         break;
                                     }
@@ -502,10 +593,10 @@ int main()
                             post_menu(menu3);
                             wrefresh(win[1]);
                         }
-                        else if (idx == 3 && !moving) // trig out
+                        else if (idx == 3 && !moving && !scan_progress) // trig out
                         {
                         }
-                        else if (idx == 4 && !moving) // trig in
+                        else if (idx == 4 && !moving && !scan_progress) // trig in
                         {
                         }
                         else if (idx == 5 && !smotor->isMoving()) // start scan
