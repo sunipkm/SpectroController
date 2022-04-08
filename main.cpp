@@ -620,7 +620,7 @@ int main()
                                         }
                                         goto back_to_scan_menu;
                                     }
-                                    else if (sel2 == 3) // back to menu 3
+                                    else if (sel2 == 2) // back to menu 3
                                     {
                                         goto back_to_scan_menu;
                                     }
