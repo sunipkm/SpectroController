@@ -434,12 +434,32 @@ int main()
                 set_menu_sub(menu3, derwin(win[1], menu3_n_choices + 2, 38, 2, 1));
                 set_menu_mark(menu3, " * ");
                 post_menu(menu3);
-                wrefresh(win[1]);
                 if (err_msg.length())
                 {
-                    mvwprintw(win[1], 2 + menu3_n_choices, 4, "Info: %s", err_msg.c_str());
+                    char *msg = (char *) calloc(err_msg.length() + 1, 1);
+                    memcpy(msg, err_msg.c_str(), err_msg.length());
+                    mvwprintw(win[1], 2 + menu3_n_choices, 4, "Info: ", err_msg.c_str());
+                    int i = 0;
+                    char *tmpmsg = msg;
+                    do
+                    {
+                        char *loc = strchr(tmpmsg, '\n');
+                        if (loc == NULL)
+                        {
+                            mvwprintw(win[1], 2 + menu3_n_choices + i, 10, "%s", tmpmsg);
+                            break;
+                        }
+                        else
+                        {
+                            *loc = '\0';
+                            mvwprintw(win[1], 2 + menu3_n_choices + i, 10, "%s", tmpmsg);
+                            tmpmsg = loc + 1;
+                            i++;
+                        }
+                    } while(true);
                     err_msg = "";
                 }
+                wrefresh(win[1]);
                 while ((c = wgetch(stdscr)))
                 {
                     if (c == KEY_F(5))
