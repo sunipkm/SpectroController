@@ -598,7 +598,7 @@ int main()
                                             }
                                             scan_stop = input_steps;
                                         }
-                                        else if (idx == 3) // step
+                                        else if (idx == 2) // step
                                         {
                                             if (input_steps <= 0)
                                             {
