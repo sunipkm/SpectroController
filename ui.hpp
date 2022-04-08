@@ -14,7 +14,7 @@
 
 #include <string>
 
-#define MIN_STATUS_WIN 8
+#define MIN_STATUS_WIN 9
 #define MIN_OPTS_WIN 16
 
 #define MIN_ROWS (MIN_STATUS_WIN + MIN_OPTS_WIN)

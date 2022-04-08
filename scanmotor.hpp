@@ -48,10 +48,14 @@ private:
     volatile bool moving;        // move indicator
     Adafruit::StepperMotor *mot; // stepper motor
     voidfptr_t invalidFn;        // invalidate current position
+    bool scanning;               // scanning now
+    int trigin;                  // trig in pin
+    int trigout;                 // trig out pin
+    int currentScan;
     volatile sig_atomic_t *done;
 
 public:
-    ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 10000, voidfptr_t _invalidFn = NULL)
+    ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 10000, voidfptr_t _invalidFn = NULL, int trigin = -1, int trigout = -1)
     {
         if (mot == NULL || mot == nullptr)
             throw std::runtime_error("Stepper motor pointer can not be null.");
@@ -94,16 +98,35 @@ public:
         {
             throw std::runtime_error("Could not set pull up on pin " + std::to_string(ls2));
         }
+        if (trigin > 0) // valid pin
+        {
+            if (gpioSetMode(trigin, GPIO_IRQ_RISE) < 0)
+                throw std::runtime_error("Could not set pin " + std::to_string(trigin) + " as trigger input interrupt.");
+            if (gpioSetPullUpDown(trigin, GPIO_PUD_UP) < 0)
+                throw std::runtime_error("Could not set pull up on pin " + std::to_string(trigin));
+        }
+        if (trigout > 0) // valid pin
+        {
+            if (gpioSetMode(trigout, GPIO_OUT) < 0)
+                throw std::runtime_error("Could not set pin " + std::to_string(trigout) + " as trigger output.");
+            gpioWrite(trigout, GPIO_LOW);
+        }
         gpioToState();
         if (state == ScanMotor_State::ERROR)
         {
             throw std::runtime_error("Both limit switches closed, indicates wiring error.");
         }
+        scanning = false;
         invalidFn = _invalidFn;
         this->absPos = absPos;
+        this->trigin = trigin;
+        this->trigout = trigout;
+        this->currentScan = 0;
     }
 
     inline int getPos() const { return absPos; }
+
+    inline int getCurrentScan() const { return currentScan; }
 
     int goToPos(int target, bool override = false, bool blocking = false)
     {
@@ -141,6 +164,24 @@ public:
         moving = false;
         return (steps - nsteps);
     }
+
+    void initScan(int start, int stop, int step, int maxWait, int pulseWidthMs = 10)
+    {
+        if (scanning)
+            return;
+        std::thread thr(initScanFn, this, start, stop, step, maxWait, pulseWidthMs);
+        thr.detach();
+        return;
+    }
+
+    void cancelScan()
+    {
+        if (scanning)
+            scanning = false;
+        eStop();
+    }
+
+    bool isScanning() const { return scanning; }
 
     ScanMotor_State getState()
     {
@@ -225,6 +266,53 @@ private:
         {
             self->posDelta(_target - self->absPos, self->dir2, override);
         }
+    }
+
+    static void initScanFn(ScanMotor *self, int start, int stop, int step, int maxWait, int pulseWidthMs)
+    {
+        self->scanning = false;
+        // sanity checks
+        if (stop < start)
+            return;
+        if (step <= 0)
+            return;
+        if (((stop - start) / step) < 2)
+            return;
+        if (maxWait <= 0)
+            return;
+        if (pulseWidthMs <= 1)
+            pulseWidthMs = 1;
+        // check complete
+        self->scanning = true;
+        for (int i = start; i < stop && self->scanning; )
+        {
+            // step 1: pulse
+            if (self->trigout > 0 && self->scanning)
+            {
+                gpioWrite(self->trigout, GPIO_HIGH);
+                usleep(pulseWidthMs * 1000);
+                gpioWrite(self->trigout, GPIO_LOW);
+            }
+            if (!self->scanning)
+                break;
+            // step 2: wait
+            if (self->trigin > 0 && self->scanning)
+            {
+                gpioWaitIRQ(self->trigin, GPIO_IRQ_RISE, maxWait * 1000);
+            }
+            else if (self->scanning)
+            {
+                usleep(maxWait * 1000000LLU);
+            }
+            if (!self->scanning)
+                break;
+            // step 3: move
+            i += step;
+            if (self->scanning)
+                self->goToPosInternal(self, i, false);
+            self->currentScan = i;
+        }
+        self->scanning = false;
     }
 };
 

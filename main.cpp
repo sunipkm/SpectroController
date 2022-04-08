@@ -59,7 +59,7 @@ const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *)"posinfo.bin";
 
 bool scan_progress = false;
-int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10; // step gap is measured in seconds
+int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10, pulse_width; // step gap is measured in seconds
 
 static int LoadCurrentPos();
 static void InvalidateCurrentPos();
@@ -113,14 +113,14 @@ char *port_menu_desc[] = {
     (char *)NULL};
 
 char *scan_menu_desc[] = {
-    (char *)"Start",       // 1
-    (char *)"Stop",        // 2
-    (char *)"Step",        // 3
-    (char *)"Trigger Out", // 4
-    (char *)"Trigger In",  // 5
-    (char *)"Start Scan",  // 6
-    (char *)"Cancel Scan", // 7
-    (char *)"Back",        // 8
+    (char *)"Start",              // 1
+    (char *)"Stop",               // 2
+    (char *)"Step",               // 3
+    (char *)"Trigger Out Pulse",  // 4
+    (char *)"Trigger In Timeout", // 5
+    (char *)"Start Scan",         // 6
+    (char *)"Cancel Scan",        // 7
+    (char *)"Back",               // 8
     (char *)NULL};
 
 char *scan_menu_idx[] = {
@@ -631,17 +631,68 @@ int main()
                             post_menu(menu3);
                             wrefresh(win[1]);
                         }
-                        else if (idx == 3 && !moving && !scan_progress) // trig out
+                        else if ((idx == 3 || idx == 4) && !moving && !scan_progress) // trig out and trig in
                         {
-                        }
-                        else if (idx == 4 && !moving && !scan_progress) // trig in
-                        {
+                            unpost_menu(menu3);
+                            wclear(win[1]);
+                            box(win[1], 0, 0);
+                            if (idx == 3)
+                            {
+                                mvwprintw(win[1], 0, 2, " Trigger Out Pulse ");
+                                mvwprintw(win[1], 2, 4, "Enter trigger output pulse width (ms): ");
+                            }
+                            else if (idx == 4)
+                            {
+                                mvwprintw(win[1], 0, 2, " Trigger In Timeout ");
+                                mvwprintw(win[1], 2, 4, "Enter trigger input timeout (s): ");
+                            }
+                            echo();
+                            nodelay(win[1], false);
+                            wrefresh(win[1]);
+                            if (idx == 3)
+                            {
+                                wscanw(win[1], "%d", &pulse_width);
+                                if (pulse_width <= 0)
+                                    pulse_width = 10;
+                                if (pulse_width > 100)
+                                    pulse_width = 100;
+                            }
+                            else if (idx == 4)
+                            {
+                                wscanw(win[1], "%d", &scan_step_gap);
+                                if (scan_step_gap < 1)
+                                    scan_step_gap = 1;
+                                if (scan_step_gap > 1800)
+                                    scan_step_gap = 1800;
+                            }
+                            noecho();
+                            wtimeout(win[1], 5);
+                            wclear(win[1]);
+                            box(win[1], 0, 0);
+                            mvwprintw(win[1], 0, 2, " Scan Menu ", sel);
+                            set_menu_win(menu3, win[1]);
+                            set_menu_sub(menu3, derwin(win[1], menu3_n_choices + 1, 38, 2, 1));
+                            set_menu_mark(menu3, " * ");
+                            post_menu(menu3);
+                            wrefresh(win[1]);
                         }
                         else if (idx == 5 && !smotor->isMoving()) // start scan
                         {
+                            if (scan_start > 0 && scan_stop > 0 && scan_step > 0 && pulse_width > 0 && scan_step_gap > 0)
+                                smotor->initScan(scan_start, scan_stop, scan_step, scan_step_gap, pulse_width);
                         }
                         else if (idx == 6) // cancel scan
                         {
+                            if (smotor->isScanning())
+                            {
+                                smotor->cancelScan();
+                            }
+                            else
+                            {
+                                scan_start = 0;
+                                scan_stop = 0;
+                                scan_step = 0;
+                            }
                         }
                         else if (idx == 7 && !scan_progress) // exit to menu1
                         {
@@ -743,6 +794,8 @@ static void Win0_Update_Handler()
     std::string scanmot_status = smotor->getStateStr();
     static std::string iomot_in_port_old, iomot_out_port_old, scanmot_status_old;
     static int scanmot_old_pos;
+    static int scan_start_old, scan_stop_old, scan_step_old, scan_gap_old;
+    static bool scanning_old;
     if (firstrun)
     {
         firstrun = false;
@@ -751,6 +804,11 @@ static void Win0_Update_Handler()
         iomot_in_port_old = iomot_in_port;
         iomot_out_port_old = iomot_out_port;
         scanmot_status_old = scanmot_status;
+        scan_start_old = scan_start;
+        scan_stop_old = scan_stop;
+        scan_step_old = scan_step;
+        scan_gap_old = scan_step_gap;
+        scanning_old = smotor->isScanning();
     }
     // Check if scan motor is stuck
     ScanMotor_State smotor_state = smotor->getState();
@@ -820,6 +878,28 @@ skip_reverse:
         iomot_out_port_old = iomot_out_port;
         redraw = true;
     }
+    if (scan_start_old != scan_start)
+    {
+        scan_start_old = scan_start;
+        redraw = true;
+    }if (scan_stop_old != scan_stop)
+    {
+        scan_stop_old = scan_stop;
+        redraw = true;
+    }if (scan_step_old != scan_step)
+    {
+        scan_step_old = scan_step;
+        redraw = true;
+    }if (scan_gap_old != scan_step_gap)
+    {
+        scan_gap_old = scan_step_gap;
+        redraw = true;
+    }
+    if (scanning_old != smotor->isScanning())
+    {
+        scanning_old = smotor->isScanning();
+        redraw = true;
+    }
     if (redraw)
     {
         int spcg = (win_w[0] * win_cols - 54) / 3;
@@ -849,8 +929,36 @@ skip_reverse:
         mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "          ");
         if (scanmot_home_pos > 0 && newloc != scanmot_current_pos && newloc > 0)
             mvwprintw(win[0], 4, 2 + 14 + spcg + 6 + spcg + 10 + spcg, "%.3f nm", STEP_TO_LAM * (newloc - scanmot_home_pos));
-        wrefresh(win[0]);
         // redraw = false;
+
+        spcg = (win_w[0] * win_cols - 54) / 4;
+
+        if (smotor->isScanning())
+        {
+            mvwprintw(win[0], 5, ((int)(win_cols * win_w[0])) / 2 - 5, " Scanning ");
+        }
+        else
+        {
+            mvwprintw(win[0], 5, ((int)(win_cols * win_w[0])) / 2 - 5, "----------");
+        }
+
+        if (scanmot_home_pos > 0)
+            mvwprintw(win[0], 7, 2 + 0 * (10 + spcg) ,"%4.2f nm", scan_start * STEP_TO_LAM);
+        else
+            mvwprintw(win[0], 7, 2 + 0 * (10 + spcg), "%d", scan_start);
+        
+        if (scanmot_home_pos > 0)
+            mvwprintw(win[0], 7, 2 + 1 * (10 + spcg) ,"%4.2f nm", scan_stop * STEP_TO_LAM);
+        else
+            mvwprintw(win[0], 7, 2 + 1 * (10 + spcg), "%d", scan_stop);
+        
+        mvwprintw(win[0], 7, 2 + 2 * (10 + spcg), "%4.2f nm", scan_step * STEP_TO_LAM);
+        
+        mvwprintw(win[0], 7, 2 + 3 * (10 + spcg), "%d s", scan_step_gap);
+        
+        mvwprintw(win[0], 7, 2 + 4 * (10 + spcg) ,"%d ms", pulse_width);
+        
+        wrefresh(win[0]);
     }
 }
 
@@ -892,7 +1000,7 @@ static void MotorSetup()
     Adafruit::StepperMotor *iostepper_in = ioshield->getStepper(IOMOT_REVS, IOMOT_A_PORT);
     Adafruit::StepperMotor *iostepper_out = ioshield->getStepper(IOMOT_REVS, IOMOT_B_PORT);
 
-    smotor = new ScanMotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos);
+    smotor = new ScanMotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos, TRIGIN, TRIGOUT);
     iomot_in = new IOMotor(iostepper_in, IOMOT_A_LS1, IOMOT_A_LS2, true);
     iomot_out = new IOMotor(iostepper_out, IOMOT_B_LS1, IOMOT_B_LS2, false);
 
@@ -1217,6 +1325,13 @@ void WindowsInit(WINDOW *win[], float win_w[], float win_h[], int rows, int cols
         mvwprintw(win[0], 5, 2, "%s", separator);
         free(separator);
         // mvwprintw(win[0], win0h - 1, win0w - 10, " %dx%d ", win0w, win0h);
+        spcg = (win0w - 54) / 4;
+        mvwprintw(win[0], 6, 2 + 0 * (10 + spcg), "Start");
+        mvwprintw(win[0], 6, 2 + 1 * (10 + spcg), "Stop ");
+        mvwprintw(win[0], 6, 2 + 2 * (10 + spcg), "Step ");
+        mvwprintw(win[0], 6, 2 + 3 * (10 + spcg), "Dwell");
+        mvwprintw(win[0], 6, 2 + 4 * (10 + spcg), "Pulse");
+
         wrefresh(win[0]);
     }
 
