@@ -437,7 +437,7 @@ int main()
                 wrefresh(win[1]);
                 if (err_msg.length())
                 {
-                    mvwprintw(win[1], 2, menu3_n_choices + 2, "Info: %s", err_msg.c_str());
+                    mvwprintw(win[1], 2 + menu3_n_choices, 4, "Info: %s", err_msg.c_str());
                     err_msg = "";
                 }
                 while ((c = wgetch(stdscr)))
@@ -575,14 +575,15 @@ int main()
                                             }
                                             scan_step = input_steps;
                                         }
-                                        break;
+                                        goto back_to_scan_menu;
                                     }
                                     else if (sel2 == 3) // back to menu 3
                                     {
-                                        break;
+                                        goto back_to_scan_menu;
                                     }
                                 }
                             }
+                        back_to_scan_menu:
                             unpost_menu(menu4);
                             wclear(win[1]);
                             box(win[1], 0, 0);
