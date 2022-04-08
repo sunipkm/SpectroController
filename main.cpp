@@ -57,6 +57,10 @@ static int scanmot_home_pos = 0;
 static int newloc = 0;
 const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *)"posinfo.bin";
+
+bool scan_progress = false;
+int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10; // step gap is measured in seconds
+
 static int LoadCurrentPos();
 static void InvalidateCurrentPos();
 static void ValidateCurrentPos();
@@ -85,7 +89,7 @@ char *menu1_choices_desc[] = {
     (char *)"Go to Wavelength",      // 4
     (char *)"Step Relative (steps)", // 5
     (char *)"Step Relative (nm)",    // 6
-    (char *)"Update Home Location",  // 7
+    (char *)"Update Zero Location",  // 7
     (char *)"Scan Spectra",          // 8
     (char *)"Exit Program",          // 9
     (char *)NULL};
@@ -156,6 +160,16 @@ int main()
 
     // Initialization and drawing of windows' static elements.
     getmaxyx(stdscr, win_rows, win_cols);
+    if (win_rows < 24)
+    {
+        dbprintlf(RED_FG "Window requires at least 24 rows.");
+        goto prog_cleanup;
+    }
+    if (win_cols < 80)
+    {
+        dbprintlf(RED_FG "Window requires at least 80 columns.");
+        goto prog_cleanup;
+    }
     WindowsInit(win, win_w, win_h, win_rows, win_cols);
 
     // Menu1 setup.
@@ -418,8 +432,6 @@ int main()
             }
             else if (sel == 7) // set up a scan
             {
-                bool scan_progress = false;
-                int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10; // step gap is measured in seconds
                 std::string err_msg = "";
                 unpost_menu(menu1);
             start_scan_menu:
@@ -436,7 +448,7 @@ int main()
                 post_menu(menu3);
                 if (err_msg.length())
                 {
-                    char *msg = (char *) calloc(err_msg.length() + 1, 1);
+                    char *msg = (char *)calloc(err_msg.length() + 1, 1);
                     memcpy(msg, err_msg.c_str(), err_msg.length());
                     mvwprintw(win[1], 2 + menu3_n_choices, 4, "Info: ", err_msg.c_str());
                     int i = 0;
@@ -444,20 +456,21 @@ int main()
                     do
                     {
                         char *loc = strchr(tmpmsg, '\n');
-                        if (loc == NULL)
+                        if (loc == NULL) // if no newline
                         {
-                            mvwprintw(win[1], 2 + menu3_n_choices + i, 10, "%s", tmpmsg);
+                            mvwprintw(win[1], 2 + menu3_n_choices + i, 10, "%s", tmpmsg); // print message at current line and exit loop
                             break;
                         }
-                        else
+                        else // newline found
                         {
-                            *loc = '\0';
-                            mvwprintw(win[1], 2 + menu3_n_choices + i, 10, "%s", tmpmsg);
-                            tmpmsg = loc + 1;
-                            i++;
+                            *loc = '\0';                                                  // replace newline with null
+                            mvwprintw(win[1], 2 + menu3_n_choices + i, 10, "%s", tmpmsg); // print up to the null which was the newline at the current line
+                            tmpmsg = loc + 1;                                             // update string start to character after newline
+                            i++;                                                          // move to next line
                         }
-                    } while(true);
-                    err_msg = "";
+                    } while (true);
+                    free(msg);    // clean up temp
+                    err_msg = ""; // clean up string
                 }
                 wrefresh(win[1]);
                 while ((c = wgetch(stdscr)))
@@ -549,11 +562,16 @@ int main()
                                         {
                                             wscanw(win[1], "%d", &input_steps);
                                         }
-                                        else if (sel2 == 1)
+                                        else if ((sel2 == 1) && ((idx == 2) || (idx < 2) && (scanmot_home_pos > 0))) // home position set
                                         {
                                             double input_wl = 0;
                                             wscanw(win[1], "%lf", &input_wl);
-                                            input_steps = round(input_wl / STEP_TO_LAM);
+                                            input_steps = round(input_wl / STEP_TO_LAM) + scanmot_home_pos;
+                                        }
+                                        else if ((sel2 ==1) && (!((idx < 2) && (scanmot_home_pos > 0)))) // home position not set
+                                        {
+                                            err_msg = "Start/Stop position can not be in nanometers\nunless home position is set.";
+                                            goto start_scan_menu;
                                         }
                                         noecho();
                                         wtimeout(win[1], 5); // reinstate delay
@@ -708,6 +726,7 @@ int main()
     DestroyMenu(menu2, menu2_n_choices, menu2_items);
     WindowsDestroy(win, ARRAY_SIZE(win));
     refresh();
+prog_cleanup:
     ncurses_cleanup();
 
     smotor->eStop(); // stop in case moving
