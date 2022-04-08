@@ -943,12 +943,12 @@ skip_reverse:
         }
 
         if (scanmot_home_pos > 0)
-            mvwprintw(win[0], 7, 2 + 0 * (10 + spcg) ,"%4.2f nm", scan_start * STEP_TO_LAM);
+            mvwprintw(win[0], 7, 2 + 0 * (10 + spcg) ,"%4.2f nm", (scan_start - scanmot_home_pos) * STEP_TO_LAM);
         else
             mvwprintw(win[0], 7, 2 + 0 * (10 + spcg), "%d", scan_start);
         
         if (scanmot_home_pos > 0)
-            mvwprintw(win[0], 7, 2 + 1 * (10 + spcg) ,"%4.2f nm", scan_stop * STEP_TO_LAM);
+            mvwprintw(win[0], 7, 2 + 1 * (10 + spcg) ,"%4.2f nm", (scan_stop - scanmot_home_pos) * STEP_TO_LAM);
         else
             mvwprintw(win[0], 7, 2 + 1 * (10 + spcg), "%d", scan_stop);
         
