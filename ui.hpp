@@ -14,13 +14,17 @@
 
 #include <string>
 
+#define MIN_STATUS_WIN 8
+#define MIN_OPTS_WIN 16
 
+#define MIN_ROWS (MIN_STATUS_WIN + MIN_OPTS_WIN)
+#define MIN_COLS 80
 
 static WINDOW *win[2] = {0};
 static float win_w[3] = {1.f, 1.0f, 0.0f};
 static float win_h[3] = {0.35, 0.65, 0.65};
 // static float win0spcg = 0.18f; // Spacing between each of the three entries within window 0, as a percentage of the total width.
-static int winmin_h[3] = {8, 15, 15};
+static int winmin_h[3] = {MIN_STATUS_WIN, MIN_OPTS_WIN, MIN_OPTS_WIN};
 
 template <class T>
 class Data

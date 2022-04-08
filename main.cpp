@@ -155,21 +155,25 @@ int main()
     atexit(MotorCleanup);
     MotorSetup();
     bprintlf(YELLOW_FG "Current pos: %d == %.2f, launching UI...", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
+    // check screen size is valid
+    initscr();
+    getmaxyx(stdscr, win_rows, win_cols);
+    if (win_rows < MIN_ROWS)
+    {
+        dbprintlf(RED_FG "Window requires at least %d rows.", MIN_ROWS);
+        goto prog_cleanup;
+    }
+    if (win_cols < MIN_COLS)
+    {
+        dbprintlf(RED_FG "Window requires at least %d columns.", MIN_COLS);
+        goto prog_cleanup;
+    }
+
+    // Initialize curses
     ncurses_init();
     refresh();
 
     // Initialization and drawing of windows' static elements.
-    getmaxyx(stdscr, win_rows, win_cols);
-    if (win_rows < 24)
-    {
-        dbprintlf(RED_FG "Window requires at least 24 rows.");
-        goto prog_cleanup;
-    }
-    if (win_cols < 80)
-    {
-        dbprintlf(RED_FG "Window requires at least 80 columns.");
-        goto prog_cleanup;
-    }
     WindowsInit(win, win_w, win_h, win_rows, win_cols);
 
     // Menu1 setup.
@@ -1239,7 +1243,6 @@ void WindowsDestroy(WINDOW *win[], int num_win)
 
 void ncurses_init()
 {
-    initscr();
     cbreak();
     noecho(); // Doesn't echo input during getch().
     keypad(stdscr, TRUE);
