@@ -284,7 +284,10 @@ private:
             pulseWidthMs = 1;
         // check complete
         self->scanning = true;
-        for (int i = start; i < stop && self->scanning; )
+        self->goToPosInternal(self, start, false);
+        if (self->absPos != start)
+            return;
+        for (int i = start + step; i < stop && self->scanning; )
         {
             // step 1: pulse
             if (self->trigout > 0 && self->scanning)
@@ -307,10 +310,10 @@ private:
             if (!self->scanning)
                 break;
             // step 3: move
-            i += step;
             if (self->scanning)
                 self->goToPosInternal(self, i, false);
             self->currentScan = i;
+            i += step;
         }
         self->scanning = false;
     }

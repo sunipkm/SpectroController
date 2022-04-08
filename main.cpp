@@ -802,6 +802,7 @@ static void Win0_Update_Handler()
     static int scanmot_old_pos;
     static int scan_start_old, scan_stop_old, scan_step_old, scan_gap_old;
     static bool scanning_old;
+    scan_progress = smotor->isScanning();
     if (firstrun)
     {
         firstrun = false;
