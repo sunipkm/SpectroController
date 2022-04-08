@@ -59,7 +59,7 @@ const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *)"posinfo.bin";
 
 bool scan_progress = false;
-int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10, pulse_width; // step gap is measured in seconds
+int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10, pulse_width = 10; // step gap is measured in seconds
 
 static int LoadCurrentPos();
 static void InvalidateCurrentPos();
