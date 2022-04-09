@@ -2,13 +2,15 @@ CC=gcc
 CXX=g++
 
 EDCFLAGS= -I./ -O2 -Wall -std=gnu11 $(CFLAGS)
-EDCXXFLAGS= -I./ -I clkgen/include -O2 -Wall -Wno-narrowing -std=gnu++11 $(CXXFLAGS)
+EDCXXFLAGS= -I./ -I./include -I clkgen/include -O2 -Wall -Wno-narrowing -std=gnu++11 $(CXXFLAGS)
 
 EDLDFLAGS= -lm -lpthread -lmenu -lncurses $(LDFLAGS)
 
-CPPOBJS=Adafruit/MotorShield.o
-# MOTORSHIELDTEST=examples/motorshield.o
-MOTORSHIELDTEST=main.o
+CPPOBJS=Adafruit/MotorShield.o \
+		src/iomotor.o \
+		src/scanmotor.o
+
+MOTORSHIELDTEST=src/main.o
 
 LIBCLKGEN = clkgen/libclkgen.a
 

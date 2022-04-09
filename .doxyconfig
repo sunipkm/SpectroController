@@ -1,6 +1,6 @@
-PROJECT_NAME = "Adafruit Motor Shield v2 Linux Driver"
-PROJECT_NUMBER = "1.1.0"
-INPUT = README.MD Adafruit/MotorShield.cpp Adafruit/MotorShield.hpp
+PROJECT_NAME = "Motor Conttrols for SPEX 1000M Monochromator"
+PROJECT_NUMBER = "1.0"
+INPUT = README.MD include/iomotor.hpp include/scanmotor.hpp
 OUTPUT_DIRECTORY = doc
 USE_MDFILE_AS_MAINPAGE = README.MD
 EXTRACT_STATIC = YES

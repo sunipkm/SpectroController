@@ -1,9 +1,9 @@
 /**
- * @file test.cpp
- * @author Mit Bailey (mitbailey99@gmail.com)
- * @brief
- * @version See Git tags for version information.
- * @date 2022.03.16
+ * @file main.cpp
+ * @author Sunip K. Mukherjee (sunipkmukherjee@gmail.com)
+ * @brief Main UI and control for the modified SPEX 1000M Monochromator.
+ * @version 1.0
+ * @date 2022-04-09
  *
  * @copyright Copyright (c) 2022
  *
@@ -17,12 +17,12 @@
 #include <math.h>
 #include <limits.h>
 
+#include "main_ui.h"
 #include "Adafruit/meb_print.h"
 
 #include "scanmotor.hpp"
 #include "iomotor.hpp"
 
-#include "ui.hpp"
 #include <string>
 
 #define STEP_TO_LAM ((double)0.00801741)
@@ -59,7 +59,7 @@ const int scanmot_valid_magic = 0xbaaddaad;
 const char *pos_fname = (char *)"posinfo.bin";
 
 bool scan_progress = false;
-int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10, pulse_width = 10; // step gap is measured in seconds
+int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10, pulse_width = 10; // step gap is measured in seconds, pulse width measured in ms
 
 static int LoadCurrentPos();
 static void InvalidateCurrentPos();
@@ -131,7 +131,7 @@ char *scan_menu_idx[] = {
     (char *)"5:",
     (char *)"6:",
     (char *)"7:",
-    (char *)" ",
+    (char *)"  ",
     (char *)NULL};
 
 char *scan_pos_desc[] = {
@@ -143,7 +143,7 @@ char *scan_pos_desc[] = {
 char *scan_pos_idx[] = {
     (char *)"1:",
     (char *)"2:",
-    (char *)" ",
+    (char *)"  ",
     (char *)NULL};
 
 int menu1_n_choices, menu2_n_choices, menu3_n_choices, menu4_n_choices;
@@ -171,14 +171,11 @@ int main()
     // Initialization and drawing of windows' static elements.
     WindowsInit(win, win_w, win_h, win_rows, win_cols);
 
-    // Menu1 setup.
+    // Menu setup.
     ITEM **menu1_items, **menu2_items, **menu3_items, **menu4_items;
     int c;
     MENU *menu1, *menu2, *menu3, *menu4;
-
-    // generate_menu(menu1_items, menu1, menu1_n_choices);
-
-    { // Generate the menu.
+    { // Generate the menus.
         int i;
         menu1_n_choices = ARRAY_SIZE(menu1_choices_desc);
         menu1_items = (ITEM **)calloc(menu1_n_choices, sizeof(ITEM *));
@@ -222,7 +219,7 @@ int main()
 
     // Menu1 nav
     // Makes wgetch nonblocking so the menu isnt hogging all the cycles.
-    wtimeout(stdscr, 60);
+    wtimeout(stdscr, WIN_READ_TIMEOUT);
     while ((c = wgetch(stdscr)))
     {
         bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
@@ -368,7 +365,7 @@ int main()
                     newloc = round(rel_wl / STEP_TO_LAM);
                 }
                 noecho();
-                wtimeout(win[1], 60);
+                wtimeout(win[1], WIN_READ_TIMEOUT);
                 if (newloc != 0)
                 {
                     if (sel == 4 || sel == 5)
@@ -415,7 +412,7 @@ int main()
                 if (home_loc <= 0)
                     goto get_home_pos;
                 noecho();
-                wtimeout(win[1], 60);
+                wtimeout(win[1], WIN_READ_TIMEOUT);
 
                 scanmot_home_pos = home_loc;
 
@@ -431,6 +428,33 @@ int main()
             }
             else if (sel == 7) // set up a scan
             {
+                // [Menu 3]
+                // start
+                //   [Menu 4]
+                //   step or nm
+                //     input
+                //
+                // stop
+                //   [Menu 4]
+                //   step or nm
+                //     input
+                //
+                // step or nm
+                //   [Menu 4]
+                //   step or nm
+                //     input
+                //
+                // Trigger out pulse width
+                //   input
+                //
+                // Trigger in timeout
+                //   input
+                //
+                // Start Scan
+                //
+                // Cancel Scan
+                //
+                // Back
                 std::string err_msg = "";
                 unpost_menu(menu1);
             start_scan_menu:
@@ -579,7 +603,7 @@ int main()
                                             goto start_scan_menu;
                                         }
                                         noecho();
-                                        wtimeout(win[1], 60); // reinstate delay
+                                        wtimeout(win[1], WIN_READ_TIMEOUT); // reinstate delay
                                         // put inputs into start, stop, step
                                         if (idx == 0) // start
                                         {
@@ -672,7 +696,7 @@ int main()
                                     scan_step_gap = 1800;
                             }
                             noecho();
-                            wtimeout(win[1], 60);
+                            wtimeout(win[1], WIN_READ_TIMEOUT);
                             wclear(win[1]);
                             box(win[1], 0, 0);
                             mvwprintw(win[1], 0, 2, " Scan Menu ", sel);
@@ -719,22 +743,6 @@ int main()
                 set_menu_mark(menu1, " * ");
                 post_menu(menu1);
                 wrefresh(win[1]);
-                // [Menu 3]
-                // start
-                // [Menu 4]
-                // step or nm
-                // input
-                // stop
-                // step or nm
-                // input
-                // step
-                // step or nm
-                // input
-                // trig out properties
-                // [Menu 5]
-                // Pulse length
-                // Toggle
-                // enable trig in
             }
             else if (sel == 8) // exit
             {
@@ -780,6 +788,8 @@ int main()
 
     DestroyMenu(menu1, menu1_n_choices, menu1_items);
     DestroyMenu(menu2, menu2_n_choices, menu2_items);
+    DestroyMenu(menu3, menu3_n_choices, menu3_items);
+    DestroyMenu(menu4, menu4_n_choices, menu4_items);
     WindowsDestroy(win, ARRAY_SIZE(win));
     refresh();
 prog_cleanup:
