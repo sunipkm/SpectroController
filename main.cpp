@@ -889,15 +889,18 @@ skip_reverse:
     {
         scan_start_old = scan_start;
         redraw = true;
-    }if (scan_stop_old != scan_stop)
+    }
+    if (scan_stop_old != scan_stop)
     {
         scan_stop_old = scan_stop;
         redraw = true;
-    }if (scan_step_old != scan_step)
+    }
+    if (scan_step_old != scan_step)
     {
         scan_step_old = scan_step;
         redraw = true;
-    }if (scan_gap_old != scan_step_gap)
+    }
+    if (scan_gap_old != scan_step_gap)
     {
         scan_gap_old = scan_step_gap;
         redraw = true;
@@ -952,21 +955,21 @@ skip_reverse:
         for (int j = 0; j < 5; j++)
             mvwprintw(win[0], 7, 2 + j * (10 + spcg), "          ");
         if (scanmot_home_pos > 0 && scan_start > 0)
-            mvwprintw(win[0], 7, 2 + 0 * (10 + spcg) ,"%4.2f nm", (scan_start - scanmot_home_pos) * STEP_TO_LAM);
+            mvwprintw(win[0], 7, 2 + 0 * (10 + spcg), "%4.2f nm", (scan_start - scanmot_home_pos) * STEP_TO_LAM);
         else
             mvwprintw(win[0], 7, 2 + 0 * (10 + spcg), "%d", scan_start);
-        
+
         if (scanmot_home_pos > 0 && scan_stop > 0)
-            mvwprintw(win[0], 7, 2 + 1 * (10 + spcg) ,"%4.2f nm", (scan_stop - scanmot_home_pos) * STEP_TO_LAM);
+            mvwprintw(win[0], 7, 2 + 1 * (10 + spcg), "%4.2f nm", (scan_stop - scanmot_home_pos) * STEP_TO_LAM);
         else
             mvwprintw(win[0], 7, 2 + 1 * (10 + spcg), "%d", scan_stop);
-        
+
         mvwprintw(win[0], 7, 2 + 2 * (10 + spcg), "%4.2f nm", scan_step * STEP_TO_LAM);
-        
+
         mvwprintw(win[0], 7, 2 + 3 * (10 + spcg), "%d s", scan_step_gap);
-        
-        mvwprintw(win[0], 7, 2 + 4 * (10 + spcg) ,"%d ms", pulse_width);
-        
+
+        mvwprintw(win[0], 7, 2 + 4 * (10 + spcg), "%d ms", pulse_width);
+
         wrefresh(win[0]);
     }
 }
@@ -1057,7 +1060,11 @@ static int LoadCurrentPos()
         do
         {
             bprintf(RED_FG "Current position not known, please enter current counter readout (must be in X.XX format): ");
-            scanf("%49s", buf);
+            if (scanf("%49s", buf) == EOF)
+            {
+                bprintlf(RED_FG "EOF on stdin, user error?");
+                exit(0);
+            }
             char *loc = NULL;
             if ((loc = strchr(buf, '.')) == NULL)
             {
@@ -1146,7 +1153,12 @@ static int LoadCurrentPos()
     }
     lseek(fd, sizeof(scanmot_current_pos) + sizeof(scanmot_home_pos), SEEK_SET);
     int magic = 0;
-    read(fd, &magic, sizeof(scanmot_valid_magic));
+    if (read(fd, &magic, sizeof(scanmot_valid_magic)) < 0)
+    {
+        dbprintlf(RED_FG "Unexpected EOF on %s/%s, exiting.", cwd, pos_fname);
+        close(fd);
+        exit(0);
+    }
     if (magic != scanmot_valid_magic)
     {
         dbprintlf("Magic 0x%x is invalid. Please delete the file %s/%s and restart the program.\nNote: Any calibration is lost.", magic, cwd, pos_fname);
@@ -1154,7 +1166,12 @@ static int LoadCurrentPos()
         exit(0);
     }
     lseek(fd, 0, SEEK_SET);
-    read(fd, &current_pos, sizeof(current_pos));
+    if (read(fd, &current_pos, sizeof(current_pos)) < 0)
+    {
+        dbprintlf(RED_FG "Unexpected EOF on %s/%s, exiting.", cwd, pos_fname);
+        close(fd);
+        exit(0);
+    }
     if (current_pos == 0)
     {
         dbprintlf("Current position is 0, please delete the file %s/%s and restart the program.\nNote: Any calibration is lost.", cwd, pos_fname);
@@ -1162,7 +1179,12 @@ static int LoadCurrentPos()
         exit(0);
     }
     lseek(fd, sizeof(current_pos), SEEK_SET);
-    read(fd, &scanmot_home_pos, sizeof(scanmot_home_pos));
+    if (read(fd, &scanmot_home_pos, sizeof(scanmot_home_pos)) < 0)
+    {
+        dbprintlf(RED_FG "Unexpected EOF on %s/%s, exiting.", cwd, pos_fname);
+        close(fd);
+        exit(0);
+    }
     return current_pos;
 }
 
