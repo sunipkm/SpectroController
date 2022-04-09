@@ -222,7 +222,7 @@ int main()
 
     // Menu1 nav
     // Makes wgetch nonblocking so the menu isnt hogging all the cycles.
-    wtimeout(stdscr, 10);
+    wtimeout(stdscr, 60);
     while ((c = wgetch(stdscr)))
     {
         bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
@@ -368,7 +368,7 @@ int main()
                     newloc = round(rel_wl / STEP_TO_LAM);
                 }
                 noecho();
-                wtimeout(win[1], 5);
+                wtimeout(win[1], 60);
                 if (newloc != 0)
                 {
                     if (sel == 4 || sel == 5)
@@ -415,7 +415,7 @@ int main()
                 if (home_loc <= 0)
                     goto get_home_pos;
                 noecho();
-                wtimeout(win[1], 5);
+                wtimeout(win[1], 60);
 
                 scanmot_home_pos = home_loc;
 
@@ -579,7 +579,7 @@ int main()
                                             goto start_scan_menu;
                                         }
                                         noecho();
-                                        wtimeout(win[1], 5); // reinstate delay
+                                        wtimeout(win[1], 60); // reinstate delay
                                         // put inputs into start, stop, step
                                         if (idx == 0) // start
                                         {
@@ -672,7 +672,7 @@ int main()
                                     scan_step_gap = 1800;
                             }
                             noecho();
-                            wtimeout(win[1], 5);
+                            wtimeout(win[1], 60);
                             wclear(win[1]);
                             box(win[1], 0, 0);
                             mvwprintw(win[1], 0, 2, " Scan Menu ", sel);
@@ -1056,7 +1056,7 @@ static int LoadCurrentPos()
         char buf[50];
         do
         {
-            bprintlf(RED_FG "Current position not known, please enter current counter readout (must be in X.XX format): ");
+            bprintf(RED_FG "Current position not known, please enter current counter readout (must be in X.XX format): ");
             scanf("%49s", buf);
             char *loc = NULL;
             if ((loc = strchr(buf, '.')) == NULL)
