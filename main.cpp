@@ -1030,8 +1030,12 @@ static int LoadCurrentPos()
         char buf[50];
         do
         {
-            bprintf(RED_FG "Current position not known, please enter current counter readout (must be in X.XX format): ");
-            scanf("%49s", buf);
+            bprintf(YELLOW_FG "Current position not known, please enter current counter readout (must be in X.XX format): ");
+            if (scanf("%49s", buf) == EOF)
+            {
+                bprintlf(RED_FG "\nUnexpected EOF at stdin, user error?");
+                exit(0);
+            }
             char *loc = NULL;
             if ((loc = strchr(buf, '.')) == NULL)
             {
