@@ -1083,7 +1083,7 @@ static int LoadCurrentPos()
         } while (!valid);
         int retry = 10;
         while (fd <= 0 && retry--)
-            fd = open(pos_fname, O_CREAT);
+            fd = open(pos_fname, O_CREAT, 0600);
         if (fd <= 0 && retry == 0)
         {
             dbprintlf("Could not create location save file.");

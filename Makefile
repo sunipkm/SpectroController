@@ -27,6 +27,10 @@ controller: $(COBJS) $(CPPOBJS) $(MOTORSHIELDTEST) $(LIBCLKGEN)
 $(LIBCLKGEN):
 	cd clkgen && make && make ..
 
+install:
+	cp controller.out /usr/local/bin/controller
+	cp posinfo.bin /usr/local/bin/posinfo.bin
+
 .PHONY: clean doc
 
 doc:
