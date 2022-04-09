@@ -57,8 +57,6 @@ private:
 public:
     ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 10000, voidfptr_t _invalidFn = NULL, int trigin = -1, int trigout = -1)
     {
-        if (mot == NULL || mot == nullptr)
-            throw std::runtime_error("Stepper motor pointer can not be null.");
         signal(SIGINT, ScanMotor_sigHandler);
         done = &scanmotor_internal_done;
         this->mot = mot;
@@ -82,40 +80,7 @@ public:
         }
         this->dir1 = dir1;
         this->dir2 = dir2;
-        if (gpioSetMode(ls1, GPIO_IN) < 0)
-        {
-            throw std::runtime_error("Could not set pin " + std::to_string(ls1) + " as input pin.");
-        }
-        if (gpioSetPullUpDown(ls1, GPIO_PUD_UP) < 0)
-        {
-            throw std::runtime_error("Could not set pull up on pin " + std::to_string(ls1));
-        }
-        if (gpioSetMode(ls2, GPIO_IN) < 0)
-        {
-            throw std::runtime_error("Could not set pin " + std::to_string(ls2) + " as input pin.");
-        }
-        if (gpioSetPullUpDown(ls2, GPIO_PUD_UP) < 0)
-        {
-            throw std::runtime_error("Could not set pull up on pin " + std::to_string(ls2));
-        }
-        if (trigin > 0) // valid pin
-        {
-            if (gpioSetMode(trigin, GPIO_IRQ_RISE) < 0)
-                throw std::runtime_error("Could not set pin " + std::to_string(trigin) + " as trigger input interrupt.");
-            if (gpioSetPullUpDown(trigin, GPIO_PUD_UP) < 0)
-                throw std::runtime_error("Could not set pull up on pin " + std::to_string(trigin));
-        }
-        if (trigout > 0) // valid pin
-        {
-            if (gpioSetMode(trigout, GPIO_OUT) < 0)
-                throw std::runtime_error("Could not set pin " + std::to_string(trigout) + " as trigger output.");
-            gpioWrite(trigout, GPIO_LOW);
-        }
         gpioToState();
-        if (state == ScanMotor_State::ERROR)
-        {
-            throw std::runtime_error("Both limit switches closed, indicates wiring error.");
-        }
         scanning = false;
         invalidFn = _invalidFn;
         this->absPos = absPos;
@@ -156,7 +121,7 @@ public:
                 absPos--;
             if (invalidFn != NULL)
                 invalidFn();
-            mot->onestep(dir, style);
+            usleep(10000);
             gpioToState();
             if (!nsteps)
                 break;
@@ -220,8 +185,8 @@ public:
 private:
     void gpioToState()
     {
-        int st_ls1 = gpioRead(ls1);
-        int st_ls2 = gpioRead(ls2);
+        int st_ls1 = GPIO_LOW;
+        int st_ls2 = GPIO_LOW;
         if (st_ls1 == GPIO_HIGH && st_ls2 == GPIO_HIGH) // both switches closed, impossible, error!
         {
             state = ScanMotor_State::ERROR;
@@ -290,20 +255,14 @@ private:
         for (int i = start + step; i < stop && self->scanning; )
         {
             // step 1: pulse
-            if (self->trigout > 0 && self->scanning)
+            if (self->scanning)
             {
-                gpioWrite(self->trigout, GPIO_HIGH);
                 usleep(pulseWidthMs * 1000);
-                gpioWrite(self->trigout, GPIO_LOW);
             }
             if (!self->scanning)
                 break;
             // step 2: wait
-            if (self->trigin > 0 && self->scanning)
-            {
-                gpioWaitIRQ(self->trigin, GPIO_IRQ_RISE, maxWait * 1000);
-            }
-            else if (self->scanning)
+            if (self->scanning)
             {
                 usleep(maxWait * 1000000LLU);
             }

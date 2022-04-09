@@ -17,6 +17,7 @@
 #include "Adafruit/meb_print.h"
 #include <stdint.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <thread>
 
@@ -38,13 +39,12 @@ private:
     Adafruit::MotorDir dir1; // limit sw 1 dir (forward)
     Adafruit::MotorDir dir2; // limit sw 2 dir (backward)
     bool ls1porta;           // if limit sw 1 is port A
+    bool firstRun;
     Adafruit::StepperMotor *mot;
 
 public:
     IOMotor(Adafruit::StepperMotor *mot, int LimitSW1, int LimitSW2, bool LS1_is_PORTA)
     {
-        if (mot == NULL || mot == nullptr)
-            throw std::runtime_error("Stepper motor pointer can not be null.");
         this->mot = mot;
         // this->mot->setSpeed(80);
         this->ls1 = LimitSW1;
@@ -56,22 +56,7 @@ public:
         this->dir1 = Adafruit::MotorDir::FORWARD;
         this->dir2 = Adafruit::MotorDir::BACKWARD;
         ls1porta = LS1_is_PORTA;
-        if (gpioSetMode(ls1, GPIO_IN) < 0)
-        {
-            throw std::runtime_error("Could not set pin " + std::to_string(ls1) + " as input pin.");
-        }
-        if (gpioSetPullUpDown(ls1, GPIO_PUD_UP) < 0)
-        {
-            throw std::runtime_error("Could not set pull up on pin " + std::to_string(ls1));
-        }
-        if (gpioSetMode(ls2, GPIO_IN) < 0)
-        {
-            throw std::runtime_error("Could not set pin " + std::to_string(ls2) + " as input pin.");
-        }
-        if (gpioSetPullUpDown(ls2, GPIO_PUD_UP) < 0)
-        {
-            throw std::runtime_error("Could not set pull up on pin " + std::to_string(ls2));
-        }
+        firstRun = true;
         state = getState();
         if (state == IOMotor_State::ERROR)
         {
@@ -98,13 +83,16 @@ public:
     }
     IOMotor_State getState()
     {
-        gpioToState();
+        if (firstRun)
+        {
+            gpioToState();
+            firstRun = false;
+        }
         return state;
     }
 
     std::string getStateStr()
     {
-        gpioToState();
         std::string motorst;
         if (state == IOMotor_State::ERROR)
             motorst = "Error";
@@ -126,15 +114,14 @@ public:
             thr.detach();
         else
             thr.join();
-        gpioToState(); // final verification
         return state;
     }
 
 private:
     void gpioToState() // get state from GPIO inputs
     {
-        int st_ls1 = gpioRead(ls1);
-        int st_ls2 = gpioRead(ls2);
+        int st_ls1 = rand() % 2; // HIGH or LOW
+        int st_ls2 = st_ls1 ^ 1; // LOW or HIGH
         if (st_ls1 == GPIO_HIGH && st_ls2 == GPIO_HIGH) // both switches closed, impossible, error!
         {
             state = IOMotor_State::ERROR;
@@ -175,16 +162,16 @@ private:
             // throw std::runtime_error("Requested error or moving, not supported!");
             dbprintlf("Requested state change to ERROR or MOVING, which are invalid. Note: will not throw exception due to testing.");
         }
-        self->gpioToState();                          // find out current state
-        while ((self->state != st) && (maxSteps > 0)) // while we are not in target state and we have steps to move
+        if (st == self->state)
         {
-            self->mot->onestep(dir, style); // move one step
-            // usleep(mot->getStepTime());
-            self->gpioToState();   // check state
-            if (maxStepsLim) // if limit imposed, reduce max steps
-                maxSteps--;
+           return;
         }
-        self->gpioToState(); // final verification
+        else
+        {
+            self->state = IOMotor_State::MOVING;
+            usleep(10000000LLU);
+            self->state = st;
+        }
     }
 };
 

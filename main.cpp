@@ -222,7 +222,7 @@ int main()
 
     // Menu1 nav
     // Makes wgetch nonblocking so the menu isnt hogging all the cycles.
-    wtimeout(stdscr, 10);
+    wtimeout(stdscr, 100);
     while ((c = wgetch(stdscr)))
     {
         bool moving = smotor->isMoving() || (iomot_in->getState() == IOMotor_State::MOVING) || (iomot_out->getState() == IOMotor_State::MOVING);
@@ -368,7 +368,7 @@ int main()
                     newloc = round(rel_wl / STEP_TO_LAM);
                 }
                 noecho();
-                wtimeout(win[1], 5);
+                wtimeout(win[1], 100);
                 if (newloc != 0)
                 {
                     if (sel == 4 || sel == 5)
@@ -415,7 +415,7 @@ int main()
                 if (home_loc <= 0)
                     goto get_home_pos;
                 noecho();
-                wtimeout(win[1], 5);
+                wtimeout(win[1], 100);
 
                 scanmot_home_pos = home_loc;
 
@@ -579,7 +579,7 @@ int main()
                                             goto start_scan_menu;
                                         }
                                         noecho();
-                                        wtimeout(win[1], 5); // reinstate delay
+                                        wtimeout(win[1], 100); // reinstate delay
                                         // put inputs into start, stop, step
                                         if (idx == 0) // start
                                         {
@@ -672,7 +672,7 @@ int main()
                                     scan_step_gap = 1800;
                             }
                             noecho();
-                            wtimeout(win[1], 5);
+                            wtimeout(win[1], 100);
                             wclear(win[1]);
                             box(win[1], 0, 0);
                             mvwprintw(win[1], 0, 2, " Scan Menu ", sel);
@@ -973,11 +973,7 @@ skip_reverse:
 
 static void MotorCleanup()
 {
-    delete smotor;
-    delete iomot_out;
-    delete iomot_in;
-    delete sm_shield;
-    delete ioshield;
+    
 }
 
 static void MotorSetup()
@@ -986,32 +982,10 @@ static void MotorSetup()
     atexit(ValidateCurrentPos); // validate current position at exit
     scanmot_current_pos = LoadCurrentPos();
     // dbprintlf("Instantiating MotorShield and StepperMotor with address %d, bus %d, %d steps, and port %d.", MSHIELD_ADDR, MSHIELD_BUS, M_STEPS, M_PORT);
-    sm_shield = new Adafruit::MotorShield(SMSHIELD_ADDR, MSHIELD_BUS);
-    try
-    {
-        sm_shield->begin();
-    }
-    catch (std::exception &e)
-    {
-        dbprintlf("Exception: %s.", e.what());
-    }
-    Adafruit::StepperMotor *scanstepper = sm_shield->getStepper(SMOT_REVS, SMOT_PORT);
 
-    ioshield = new Adafruit::MotorShield(IOMSHIELD_ADDR, MSHIELD_BUS);
-    try
-    {
-        ioshield->begin();
-    }
-    catch (const std::exception &e)
-    {
-        dbprintlf("Exception: %s.", e.what());
-    }
-    Adafruit::StepperMotor *iostepper_in = ioshield->getStepper(IOMOT_REVS, IOMOT_A_PORT);
-    Adafruit::StepperMotor *iostepper_out = ioshield->getStepper(IOMOT_REVS, IOMOT_B_PORT);
-
-    smotor = new ScanMotor(scanstepper, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos, TRIGIN, TRIGOUT);
-    iomot_in = new IOMotor(iostepper_in, IOMOT_A_LS1, IOMOT_A_LS2, true);
-    iomot_out = new IOMotor(iostepper_out, IOMOT_B_LS1, IOMOT_B_LS2, false);
+    smotor = new ScanMotor(NULL, SMOT_LS1, Adafruit::MotorDir::BACKWARD, SMOT_LS2, Adafruit::MotorDir::FORWARD, scanmot_current_pos, &InvalidateCurrentPos, TRIGIN, TRIGOUT);
+    iomot_in = new IOMotor(NULL, IOMOT_A_LS1, IOMOT_A_LS2, true);
+    iomot_out = new IOMotor(NULL, IOMOT_B_LS1, IOMOT_B_LS2, false);
 
     bprintlf(GREEN_FG "Current pos: %d == %.2lf", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     if (smotor->getState() == ScanMotor_State::LS1)
@@ -1056,7 +1030,7 @@ static int LoadCurrentPos()
         char buf[50];
         do
         {
-            bprintlf(RED_FG "Current position not known, please enter current counter readout (must be in X.XX format): ");
+            bprintf(RED_FG "Current position not known, please enter current counter readout (must be in X.XX format): ");
             scanf("%49s", buf);
             char *loc = NULL;
             if ((loc = strchr(buf, '.')) == NULL)
@@ -1083,7 +1057,7 @@ static int LoadCurrentPos()
         } while (!valid);
         int retry = 10;
         while (fd <= 0 && retry--)
-            fd = open(pos_fname, O_CREAT);
+            fd = open(pos_fname, O_CREAT, 0700);
         if (fd <= 0 && retry == 0)
         {
             dbprintlf("Could not create location save file.");
