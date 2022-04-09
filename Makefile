@@ -6,14 +6,13 @@ EDCXXFLAGS= -I./ -I clkgen/include -O2 -Wall -Wno-narrowing -std=gnu++11 $(CXXFL
 
 EDLDFLAGS= -lm -lpthread -lmenu -lncurses $(LDFLAGS)
 
-CPPOBJS=Adafruit/MotorShield.o
+# CPPOBJS=Adafruit/MotorShield.o
 # MOTORSHIELDTEST=examples/motorshield.o
 MOTORSHIELDTEST=main.o
 
 LIBCLKGEN = clkgen/libclkgen.a
 
-COBJS=i2cbus/i2cbus.o \
-		gpiodev/gpiodev.o
+COBJS=
 
 controller: $(COBJS) $(CPPOBJS) $(MOTORSHIELDTEST) $(LIBCLKGEN)
 	$(CXX) -o $@.out $(COBJS) $(CPPOBJS) $(MOTORSHIELDTEST) $(LIBCLKGEN) $(EDLDFLAGS)
