@@ -1062,7 +1062,7 @@ static int LoadCurrentPos()
             bprintf(RED_FG "Current position not known, please enter current counter readout (must be in X.XX format): ");
             if (scanf("%49s", buf) == EOF)
             {
-                bprintlf(RED_FG "EOF on stdin, user error?");
+                bprintlf(YELLOW_FG "\nEOF on stdin, user error?");
                 exit(0);
             }
             char *loc = NULL;
