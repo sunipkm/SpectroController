@@ -13,6 +13,8 @@
 #include "gpiodev/gpiodev.h"
 #include "Adafruit/meb_print.h"
 #include <stdint.h>
+#include <time.h>
+#include <inttypes.h>
 
 #include <thread>
 
@@ -23,8 +25,34 @@ static void ScanMotor_sigHandler(int sig)
     scanmotor_internal_done = 1;
 }
 
+static inline uint64_t get_timestamp()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (ts.tv_sec * 1000000000LLU + ts.tv_nsec);
+}
+
+static inline char *get_datetime()
+{
+    static __thread char buf[128];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    snprintf(buf, sizeof(buf), "[%04d-%02d-%02d, %02d:%02d:%02d]", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+             tm.tm_hour, tm.tm_min, tm.tm_sec);
+    return buf;
+}
+
 ScanMotor::ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos, voidfptr_t _invalidFn, int trigin, int trigout)
 {
+    if (system("mkdir -p " LOG_FILE_DIR))
+    {
+        throw std::runtime_error("Could not create log directory " LOG_FILE_DIR);
+    }
+    FILE *fp = fopen(LOG_FILE_DIR "/" LOG_FILE_NAME, "a");
+    if (fp == NULL)
+    {
+        throw std::runtime_error("Could not open log file " LOG_FILE_DIR "/" LOG_FILE_NAME ", check permissions or storage capacity.");
+    }
     if (mot == NULL || mot == nullptr)
         throw std::runtime_error("Stepper motor pointer can not be null.");
     signal(SIGINT, ScanMotor_sigHandler);
@@ -90,6 +118,22 @@ ScanMotor::ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorD
     this->trigin = trigin;
     this->trigout = trigout;
     this->currentScan = 0;
+    fprintf(fp, "\n%s: Init", get_datetime());
+    fflush(fp);
+    fclose(fp);
+}
+
+ScanMotor::~ScanMotor()
+{
+    cancelScan();
+    eStop();
+    FILE *fp = fopen(LOG_FILE_DIR "/" LOG_FILE_NAME, "a");
+    if (fp != NULL)
+    {
+        fprintf(fp, "%s: Exit\n\n", get_datetime());
+        fflush(fp);
+        fclose(fp);
+    }
 }
 
 int ScanMotor::goToPos(int target, bool override, bool blocking)
@@ -108,6 +152,16 @@ int ScanMotor::posDelta(int steps, Adafruit::MotorDir dir, bool override, Adafru
     if (nsteps <= 0)
         return 0;
     gpioToState();
+    FILE *fp = fopen(LOG_FILE_DIR "/" LOG_FILE_NAME, "a");
+    if (fp == NULL)
+    {
+        dbprintlf("Could not open log file " LOG_FILE_DIR "/" LOG_FILE_NAME " for writing. Exiting.");
+    }
+    else
+    {
+        fprintf(fp, "%s: Moving from %d, intended %d, final loc ", get_datetime(), absPos, dir == dir1 ? -steps : steps);
+        fflush(fp);
+    }
     moving = true;
     while (moving && !(*done))
     {
@@ -126,6 +180,11 @@ int ScanMotor::posDelta(int steps, Adafruit::MotorDir dir, bool override, Adafru
             break;
     }
     moving = false;
+    if (fp != NULL)
+    {
+        fprintf(fp, "%d\n", absPos);
+        fclose(fp);
+    }
     return (steps - nsteps);
 }
 
@@ -133,7 +192,41 @@ void ScanMotor::initScan(int start, int stop, int step, int maxWait, int pulseWi
 {
     if (scanning)
         return;
-    std::thread thr(initScanFn, this, start, stop, step, maxWait, pulseWidthMs);
+    // sanity checks
+    if (stop < start)
+        return;
+    if (step <= 0)
+        return;
+    if (((stop - start) / step) < 2)
+        return;
+    if (maxWait <= 0)
+        return;
+    if (pulseWidthMs <= 1)
+        pulseWidthMs = 1;
+    // save scan info
+    char fname[256];
+    snprintf(fname, sizeof(fname), LOG_FILE_DIR "/scan_%" PRIu64 ".log", get_timestamp());
+    FILE *fp = fopen(fname, "a");
+    if (fp == NULL)
+    {
+        dbprintlf("Could not open log file %s for writing.", fname);
+    }
+    else
+    {
+        int num = fprintf(fp, "%s: Initiating scan, (%d, %d, %d | %d, %d), saving to %s.\n", get_datetime(), start, stop, step, maxWait, pulseWidthMs, fp ? fname : "Error");
+        for (int i = num; i > 0; i--)
+            fprintf(fp, "-");
+        fprintf(fp, "\n");
+        fflush(fp);
+    }
+    FILE *lp = fopen(LOG_FILE_DIR "/" LOG_FILE_NAME, "a");
+    if (lp != NULL)
+    {
+        fprintf(lp, "%s: Initiating scan, (%d, %d, %d | %d, %d), saving to %s.\n", get_datetime(), start, stop, step, maxWait, pulseWidthMs, fp ? fname : "Error");
+        fclose(lp);
+    }
+    // initiate scan
+    std::thread thr(initScanFn, this, start, stop, step, maxWait, pulseWidthMs, fp);
     thr.detach();
     return;
 }
@@ -214,7 +307,7 @@ void ScanMotor::goToPosInternal(ScanMotor *self, int target, bool override)
     }
 }
 
-void ScanMotor::initScanFn(ScanMotor *self, int start, int stop, int step, int maxWait, int pulseWidthMs)
+void ScanMotor::initScanFn(ScanMotor *self, int start, int stop, int step, int maxWait, int pulseWidthMs, FILE *fp)
 {
     self->scanning = false;
     // sanity checks
@@ -230,12 +323,25 @@ void ScanMotor::initScanFn(ScanMotor *self, int start, int stop, int step, int m
         pulseWidthMs = 1;
     // check complete
     self->scanning = true;
+    if (fp != NULL)
+        fprintf(fp, "[%" PRIu64 "] Moving to start: %d\n", get_timestamp(), start);
     self->goToPosInternal(self, start, false);
     if (self->absPos != start)
+    {
+        if (fp != NULL)
+        {
+            fprintf(fp, "[%" PRIu64 "] Could not reach start: %d, reached %d.\n", get_timestamp(), start, self->absPos);
+            fclose(fp);
+        }
         return;
+    }
     for (int i = start + step; i < stop && self->scanning;)
     {
         // step 1: pulse
+        if (fp != NULL)
+        {
+            fprintf(fp, "[%" PRIu64 "] Triggering at: %d.\n", get_timestamp(), self->absPos);
+        }
         if (self->trigout > 0 && self->scanning)
         {
             gpioWrite(self->trigout, GPIO_HIGH);
@@ -262,4 +368,15 @@ void ScanMotor::initScanFn(ScanMotor *self, int start, int stop, int step, int m
         i += step;
     }
     self->scanning = false;
+    if (fp != NULL)
+    {
+        fprintf(fp, "[%" PRIu64 "] Exiting at: %d.\n", get_timestamp(), self->absPos);
+        fclose(fp);
+    }
+    FILE *lp = fopen(LOG_FILE_DIR "/" LOG_FILE_NAME, "a");
+    if (lp != NULL)
+    {
+        fprintf(lp, "%s: Finished scan, (%d, %d, %d | %d, %d), current location %d.\n", get_datetime(), start, stop, step, maxWait, pulseWidthMs, self->absPos);
+        fclose(lp);
+    }
 }

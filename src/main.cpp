@@ -56,7 +56,12 @@ static int scanmot_current_pos = 0;
 static int scanmot_home_pos = 0;
 static int newloc = 0;
 const int scanmot_valid_magic = 0xbaaddaad;
-const char *pos_fname = (char *)"posinfo.bin";
+
+#ifndef INSTALL_DIR
+#define INSTALL_DIR "/usr/local/monochromatord/"
+#endif
+
+const char *pos_fname = (char *)INSTALL_DIR "/posinfo.bin";
 
 bool scan_progress = false;
 int scan_start = 0, scan_stop = 0, scan_step = 0, scan_step_gap = 10, pulse_width = 10; // step gap is measured in seconds, pulse width measured in ms
@@ -72,6 +77,11 @@ void sighandler(int sig)
 {
 }
 
+void sighuphandler(int sig)
+{
+    exit(0);
+}
+
 #define STEP_TO_CTR(x) (((double)x) / 250.0)
 #define CTR_TO_STEP(x) (round(x * 250))
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
@@ -81,6 +91,7 @@ Adafruit::MotorShield *ioshield = nullptr;
 ScanMotor *smotor = nullptr;
 IOMotor *iomot_out = nullptr;
 IOMotor *iomot_in = nullptr;
+
 
 char *menu1_choices_desc[] = {
     (char *)"Select Input Port",     // 1
@@ -152,6 +163,7 @@ int win_rows = 0, win_cols = 0;
 int main()
 {
     signal(SIGINT, sighandler);
+    signal(SIGHUP, sighuphandler);
     atexit(MotorCleanup);
     MotorSetup();
     bprintlf(YELLOW_FG "Current pos: %d == %.2f, launching UI...", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));

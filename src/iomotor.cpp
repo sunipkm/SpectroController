@@ -73,6 +73,12 @@ IOMotor::IOMotor(Adafruit::StepperMotor *mot, int LimitSW1, int LimitSW2, bool L
     }
 }
 
+IOMotor::~IOMotor()
+{
+    if (getState() == IOMotor_State::MOVING)
+        sleep(5);
+}
+
 IOMotor_State IOMotor::getState()
 {
     gpioToState();

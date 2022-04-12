@@ -13,6 +13,7 @@
 #define __SCANMOTOR_HPP__
 
 #include "Adafruit/MotorShield.hpp"
+#include <stdio.h>
 
 #ifdef _DOXYGEN_
 /**
@@ -21,6 +22,22 @@
  * 
  */
 #define SCANMOT_BACKLASH_COMPENSATION 200
+#endif
+
+#ifndef LOG_FILE_DIR
+/**
+ * @brief Scanning motor movement log file directory.
+ * 
+ */
+#define LOG_FILE_DIR "/var/log/monochromatord/"
+#endif // LOG_FILE_DIR
+
+#ifndef LOG_FILE_NAME
+/**
+ * @brief Scanning motor movement log file name.
+ * 
+ */
+#define LOG_FILE_NAME "motion.log"
 #endif
 
 #ifndef SCANMOT_BACKLASH_COMPENSATION
@@ -66,6 +83,12 @@ public:
      * @param trigout Default: -1. GPIO pin to receive trigger output while scanning. Only used for scanning functionality if supplied.
      */
     ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos = 100000, voidfptr_t _invalidFn = NULL, int trigin = -1, int trigout = -1);
+
+    /**
+     * @brief Stop current movements and destroy scanning motor.
+     * 
+     */
+    ~ScanMotor();
 
     /**
      * @brief Get the current absolute position of the motor.
@@ -162,7 +185,7 @@ private:
      */
     void gpioToState();
     static void goToPosInternal(ScanMotor *self, int target, bool override);
-    static void initScanFn(ScanMotor *self, int start, int stop, int step, int maxWait, int pulseWidthMs);
+    static void initScanFn(ScanMotor *self, int start, int stop, int step, int maxWait, int pulseWidthMs, FILE *fp);
 
 private:
 private:

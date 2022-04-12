@@ -50,6 +50,12 @@ public:
     _Catchable IOMotor(Adafruit::StepperMotor *mot, int LimitSW1, int LimitSW2, bool LS1_is_PORTA);
 
     /**
+     * @brief Closes IOMotor handles.
+     * 
+     */
+    ~IOMotor();
+
+    /**
      * @brief Get the current state of the IOMotor object.
      * 
      * @return IOMotor_State Current state of the IOMotor object.
