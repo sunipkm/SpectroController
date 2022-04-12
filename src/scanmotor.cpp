@@ -98,14 +98,15 @@ ScanMotor::ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorD
     {
         if (gpioSetMode(trigin, GPIO_IRQ_RISE) < 0)
             throw std::runtime_error("Could not set pin " + std::to_string(trigin) + " as trigger input interrupt.");
-        if (gpioSetPullUpDown(trigin, GPIO_PUD_UP) < 0)
-            throw std::runtime_error("Could not set pull up on pin " + std::to_string(trigin));
+        if (gpioSetPullUpDown(trigin, GPIO_PUD_DOWN) < 0)
+            throw std::runtime_error("Could not set pull down on pin " + std::to_string(trigin));
     }
     if (trigout > 0) // valid pin
     {
-        if (gpioSetMode(trigout, GPIO_OUT) < 0)
+        if (gpioSetMode(trigout, GPIO_IN) < 0)
             throw std::runtime_error("Could not set pin " + std::to_string(trigout) + " as trigger output.");
-        gpioWrite(trigout, GPIO_LOW);
+        if (gpioSetPullUpDown(trigout, GPIO_PUD_DOWN) < 0)
+            throw std::runtime_error("Could not set pull down on pin " + std::to_string(trigout));
     }
     gpioToState();
     if (state == ScanMotor_State::ERROR)
@@ -118,7 +119,7 @@ ScanMotor::ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorD
     this->trigin = trigin;
     this->trigout = trigout;
     this->currentScan = 0;
-    fprintf(fp, "\n%s: Init", get_datetime());
+    fprintf(fp, "\n%s: Init\n", get_datetime());
     fflush(fp);
     fclose(fp);
 }
@@ -335,19 +336,22 @@ void ScanMotor::initScanFn(ScanMotor *self, int start, int stop, int step, int m
         }
         return;
     }
+    // step 1: pulse at start
+    if (fp != NULL)
+    {
+        fprintf(fp, "[%" PRIu64 "] Triggering at: %d.\n", get_timestamp(), self->absPos);
+    }
+    if (self->trigout > 0 && self->scanning)
+    {
+        gpioSetMode(self->trigout, GPIO_OUT);
+        gpioWrite(self->trigout, GPIO_HIGH);
+        usleep(pulseWidthMs * 1000);
+        gpioWrite(self->trigout, GPIO_LOW);
+        gpioSetMode(self->trigout, GPIO_IN);
+        gpioSetPullUpDown(self->trigout, GPIO_PUD_DOWN);
+    }
     for (int i = start + step; i < stop && self->scanning;)
     {
-        // step 1: pulse
-        if (fp != NULL)
-        {
-            fprintf(fp, "[%" PRIu64 "] Triggering at: %d.\n", get_timestamp(), self->absPos);
-        }
-        if (self->trigout > 0 && self->scanning)
-        {
-            gpioWrite(self->trigout, GPIO_HIGH);
-            usleep(pulseWidthMs * 1000);
-            gpioWrite(self->trigout, GPIO_LOW);
-        }
         if (!self->scanning)
             break;
         // step 2: wait
@@ -365,6 +369,22 @@ void ScanMotor::initScanFn(ScanMotor *self, int start, int stop, int step, int m
         if (self->scanning)
             self->goToPosInternal(self, i, false);
         self->currentScan = i;
+        // step 4: pulse
+        if (fp != NULL)
+        {
+            fprintf(fp, "[%" PRIu64 "] Triggering at: %d.\n", get_timestamp(), self->absPos);
+        }
+        if (self->trigout > 0 && self->scanning)
+        {
+            gpioSetMode(self->trigout, GPIO_OUT);
+            gpioWrite(self->trigout, GPIO_HIGH);
+            usleep(pulseWidthMs * 1000);
+            gpioWrite(self->trigout, GPIO_LOW);
+            gpioSetMode(self->trigout, GPIO_IN);
+            gpioSetPullUpDown(self->trigout, GPIO_PUD_DOWN);
+        }
+        if (!self->scanning)
+            break;
         i += step;
     }
     self->scanning = false;
