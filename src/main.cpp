@@ -92,7 +92,6 @@ ScanMotor *smotor = nullptr;
 IOMotor *iomot_out = nullptr;
 IOMotor *iomot_in = nullptr;
 
-
 char *menu1_choices_desc[] = {
     (char *)"Select Input Port",     // 1
     (char *)"Select Output Port",    // 2
@@ -426,7 +425,23 @@ int main()
                 noecho();
                 wtimeout(win[1], WIN_READ_TIMEOUT);
 
+                int old_home_pos = scanmot_home_pos;
                 scanmot_home_pos = home_loc;
+
+                if (system("mkdir -p " LOG_FILE_DIR))
+                {
+                }
+                else
+                {
+                    FILE *fp = fopen(LOG_FILE_DIR "/" LOG_FILE_NAME, "a");
+                    if (fp != NULL)
+                    {
+                        time_t t = time(NULL);
+                        struct tm dt = *localtime(&t);
+                        fprintf(fp, "[%04d-%02d-%02d %02d:%02d:%02d]: Set home from %d to %d.\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec, old_home_pos, scanmot_home_pos);
+                        fclose(fp);
+                    }
+                }
 
                 wclear(win[1]);
                 box(win[1], 0, 0);
