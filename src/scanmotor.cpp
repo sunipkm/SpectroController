@@ -103,10 +103,9 @@ ScanMotor::ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorD
     }
     if (trigout > 0) // valid pin
     {
-        if (gpioSetMode(trigout, GPIO_IN) < 0)
+        if (gpioSetMode(trigout, GPIO_OUT) < 0)
             throw std::runtime_error("Could not set pin " + std::to_string(trigout) + " as trigger output.");
-        if (gpioSetPullUpDown(trigout, GPIO_PUD_DOWN) < 0)
-            throw std::runtime_error("Could not set pull down on pin " + std::to_string(trigout));
+        gpioWrite(trigout, GPIO_LOW);
     }
     gpioToState();
     if (state == ScanMotor_State::ERROR)
@@ -343,12 +342,9 @@ void ScanMotor::initScanFn(ScanMotor *self, int start, int stop, int step, int m
     }
     if (self->trigout > 0 && self->scanning)
     {
-        gpioSetMode(self->trigout, GPIO_OUT);
         gpioWrite(self->trigout, GPIO_HIGH);
         usleep(pulseWidthMs * 1000);
         gpioWrite(self->trigout, GPIO_LOW);
-        gpioSetMode(self->trigout, GPIO_IN);
-        gpioSetPullUpDown(self->trigout, GPIO_PUD_DOWN);
     }
     for (int i = start + step; i < stop && self->scanning;)
     {
@@ -376,12 +372,9 @@ void ScanMotor::initScanFn(ScanMotor *self, int start, int stop, int step, int m
         }
         if (self->trigout > 0 && self->scanning)
         {
-            gpioSetMode(self->trigout, GPIO_OUT);
             gpioWrite(self->trigout, GPIO_HIGH);
             usleep(pulseWidthMs * 1000);
             gpioWrite(self->trigout, GPIO_LOW);
-            gpioSetMode(self->trigout, GPIO_IN);
-            gpioSetPullUpDown(self->trigout, GPIO_PUD_DOWN);
         }
         if (!self->scanning)
             break;
