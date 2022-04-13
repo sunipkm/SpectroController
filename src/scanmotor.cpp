@@ -191,16 +191,16 @@ int ScanMotor::posDelta(int steps, Adafruit::MotorDir dir, bool override, Adafru
 std::string ScanMotor::initScan(int start, int stop, int step, int maxWait, int pulseWidthMs)
 {
     if (scanning)
-        return;
+        std::string("");
     // sanity checks
     if (stop < start)
-        return;
+        std::string("");
     if (step <= 0)
-        return;
+        std::string("");
     if (((stop - start) / step) < 2)
-        return;
+        std::string("");
     if (maxWait <= 0)
-        return;
+        std::string("");
     if (pulseWidthMs <= 1)
         pulseWidthMs = 1;
     // save scan info
