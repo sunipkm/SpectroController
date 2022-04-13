@@ -165,6 +165,7 @@ int main()
     signal(SIGHUP, sighuphandler);
     atexit(MotorCleanup);
     MotorSetup();
+    std::string scan_save_loc = "";
     bprintlf(YELLOW_FG "Current pos: %d == %.2f, launching UI...", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     // check screen size is valid
     initscr();
@@ -175,7 +176,6 @@ int main()
         goto prog_cleanup;
     }
 
-    std::string scan_save_loc = "";
 
     // Initialize curses
     ncurses_init();

@@ -42,6 +42,24 @@ static inline char *get_datetime()
     return buf;
 }
 
+static inline char *get_dateh()
+{
+    static __thread char buf[128];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    snprintf(buf, sizeof(buf), "%04d%02d%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+    return buf;
+}
+
+static inline char *get_timeh()
+{
+    static __thread char buf[128];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    snprintf(buf, sizeof(buf), "%02d%02d%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    return buf;
+}
+
 ScanMotor::ScanMotor(Adafruit::StepperMotor *mot, int LimitSW1, Adafruit::MotorDir dir1, int LimitSW2, Adafruit::MotorDir dir2, int absPos, voidfptr_t _invalidFn, int trigin, int trigout)
 {
     if (system("mkdir -p " LOG_FILE_DIR))
@@ -205,7 +223,7 @@ std::string ScanMotor::initScan(int start, int stop, int step, int maxWait, int 
         pulseWidthMs = 1;
     // save scan info
     char fname[256];
-    snprintf(fname, sizeof(fname), LOG_FILE_DIR "/scan_%" PRIu64 ".log", get_timestamp());
+    snprintf(fname, sizeof(fname), LOG_FILE_DIR "/scan_%s_%s.log", get_dateh(), get_timeh());
     FILE *fp = fopen(fname, "a");
     if (fp == NULL)
     {
