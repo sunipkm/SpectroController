@@ -188,7 +188,7 @@ int ScanMotor::posDelta(int steps, Adafruit::MotorDir dir, bool override, Adafru
     return (steps - nsteps);
 }
 
-void ScanMotor::initScan(int start, int stop, int step, int maxWait, int pulseWidthMs)
+std::string ScanMotor::initScan(int start, int stop, int step, int maxWait, int pulseWidthMs)
 {
     if (scanning)
         return;
@@ -228,7 +228,7 @@ void ScanMotor::initScan(int start, int stop, int step, int maxWait, int pulseWi
     // initiate scan
     std::thread thr(initScanFn, this, start, stop, step, maxWait, pulseWidthMs, fp);
     thr.detach();
-    return;
+    return std::string(fname);
 }
 
 void ScanMotor::cancelScan()

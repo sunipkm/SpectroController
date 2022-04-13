@@ -15,6 +15,8 @@
 #include "Adafruit/MotorShield.hpp"
 #include <stdio.h>
 
+#include <string>
+
 #ifdef _DOXYGEN_
 /**
  * @brief Compensate for backlash by moving additional steps and then reversing back to the desired location.
@@ -135,8 +137,10 @@ public:
      * @param step Number of steps to move between each scan position.
      * @param maxWait Maximum time to wait at a scan position (in seconds).
      * @param pulseWidthMs Maximum time a TRIGOUT pulse is high for.
+     * 
+     * @return std::string Name of current scan log file.
      */
-    void initScan(int start, int stop, int step, int maxWait, int pulseWidthMs = 10);
+    std::string initScan(int start, int stop, int step, int maxWait, int pulseWidthMs = 10);
 
     /**
      * @brief Cancel an ongoing scan.

@@ -175,6 +175,8 @@ int main()
         goto prog_cleanup;
     }
 
+    std::string scan_save_loc = "";
+
     // Initialize curses
     ncurses_init();
     refresh();
@@ -531,6 +533,14 @@ int main()
                         wrefresh(win[1]);
                     }
                     Win0_Update_Handler();
+                    if (smotor->isScanning() && scan_save_loc.length() > 0)
+                    {
+                        mvwprintw(win[1], menu3_n_choices + 1, 2, "Saving to: %s", scan_save_loc.c_str());
+                    }
+                    else if (!smotor->isScanning() && scan_save_loc.length() > 0)
+                    {
+                        mvwprintw(win[1], menu3_n_choices + 1, 2, "Last save: %s", scan_save_loc.c_str());
+                    }
                     if (c == KEY_DOWN)
                     {
                         menu_driver(menu3, REQ_DOWN_ITEM);
@@ -736,7 +746,7 @@ int main()
                         else if (idx == 5 && !smotor->isMoving()) // start scan
                         {
                             if (scan_start > 0 && scan_stop > 0 && scan_step > 0 && pulse_width > 0 && scan_step_gap > 0)
-                                smotor->initScan(scan_start, scan_stop, scan_step, scan_step_gap, pulse_width);
+                                scan_save_loc = smotor->initScan(scan_start, scan_stop, scan_step, scan_step_gap, pulse_width);
                         }
                         else if (idx == 6) // cancel scan
                         {
@@ -749,6 +759,7 @@ int main()
                                 scan_start = 0;
                                 scan_stop = 0;
                                 scan_step = 0;
+                                scan_save_loc = "";
                             }
                         }
                         else if (idx == 7 && !scan_progress) // exit to menu1
