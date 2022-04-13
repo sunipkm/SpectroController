@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <inttypes.h>
+#include <limits.h>
 
 #include <thread>
 
@@ -222,7 +223,7 @@ std::string ScanMotor::initScan(int start, int stop, int step, int maxWait, int 
     if (pulseWidthMs <= 1)
         pulseWidthMs = 1;
     // save scan info
-    char fname[256];
+    char fname[PATH_MAX];
     snprintf(fname, sizeof(fname), LOG_FILE_DIR "/scan_%s_%s.log", get_dateh(), get_timeh());
     FILE *fp = fopen(fname, "a");
     if (fp == NULL)
