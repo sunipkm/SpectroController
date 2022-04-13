@@ -35,7 +35,7 @@ $(LIBCLKGEN):
 install:
 	mkdir -p $(INSTALLDIR)
 	cp controller.out $(INSTALLDIR)/controller
-	cp posinfo.bin $(INSTALLDIR)/posinfo.bin | true
+	cp -n posinfo.bin $(INSTALLDIR)/posinfo.bin | true
 	ln -s $(INSTALLDIR)/controller /usr/local/bin/controller
 
 uninstall:
