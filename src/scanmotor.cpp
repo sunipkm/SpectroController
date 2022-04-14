@@ -318,6 +318,17 @@ void ScanMotor::goToPosInternal(ScanMotor *self, int target, bool override)
     }
     else
         return;
+    FILE *fp = fopen(LOG_FILE_DIR "/" LOG_FILE_NAME, "a");
+    if (fp == NULL)
+    {
+        dbprintlf("Could not open log file " LOG_FILE_DIR "/" LOG_FILE_NAME " for writing. Exiting.");
+    }
+    else
+    {
+        fprintf(fp, "%s: GoToPosInternal, Current: %d, Target: %d\n", get_datetime(), self->absPos, target);
+        fflush(fp);
+        fclose(fp);
+    }
     int steps = abs(target - self->absPos);
     self->posDelta(steps, dir, override);
     if (dir == self->dir1 && !override && self->absPos < _target) // in case of backlash and LS override is not applicable
