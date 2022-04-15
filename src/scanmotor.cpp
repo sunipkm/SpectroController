@@ -182,6 +182,7 @@ int ScanMotor::posDelta(int steps, Adafruit::MotorDir dir, bool override, Adafru
         fflush(fp);
     }
     moving = true;
+    *done = 0; // in case Ctrl + C was pressed
     while (moving && !(*done))
     {
         if (!override && state != ScanMotor_State::GOOD)

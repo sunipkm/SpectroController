@@ -166,6 +166,8 @@ int main()
     atexit(MotorCleanup);
     MotorSetup();
     std::string scan_save_loc = "";
+    bool scan_status = false;
+    bool scan_status_old = false;
     bprintlf(YELLOW_FG "Current pos: %d == %.2f, launching UI...", scanmot_current_pos, STEP_TO_CTR(scanmot_current_pos));
     // check screen size is valid
     initscr();
@@ -533,13 +535,21 @@ int main()
                         wrefresh(win[1]);
                     }
                     Win0_Update_Handler();
-                    if (smotor->isScanning() && scan_save_loc.length() > 0)
+                    scan_status = smotor->isScanning();
+                    if (scan_save_loc.length() > 0)
                     {
-                        mvwprintw(win[1], menu3_n_choices + 1, 2, "Saving to: %s", scan_save_loc.c_str());
-                    }
-                    else if (!smotor->isScanning() && scan_save_loc.length() > 0)
-                    {
-                        mvwprintw(win[1], menu3_n_choices + 1, 2, "Last save: %s", scan_save_loc.c_str());
+                        if (scan_status && !scan_status_old)
+                        {
+                            mvwprintw(win[1], menu3_n_choices + 1, 2, "Saving to: %s", scan_save_loc.c_str());
+                            scan_status_old = scan_status;
+                            wrefresh(win[1]);
+                        }
+                        else if (!scan_status && scan_status_old)
+                        {
+                            mvwprintw(win[1], menu3_n_choices + 1, 2, "Last save: %s", scan_save_loc.c_str());
+                            scan_status_old = scan_status;
+                            wrefresh(win[1]);
+                        }
                     }
                     if (c == KEY_DOWN)
                     {
@@ -750,7 +760,7 @@ int main()
                         }
                         else if (idx == 6) // cancel scan
                         {
-                            if (smotor->isScanning())
+                            if (scan_status)
                             {
                                 smotor->cancelScan();
                             }
