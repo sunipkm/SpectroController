@@ -25,7 +25,7 @@
 
 #include <string>
 
-#define STEP_TO_LAM ((double)0.00801741)
+#define STEP_TO_LAM ((double)0.008014342)
 
 #define SMSHIELD_ADDR 0x63
 #define IOMSHIELD_ADDR 0x60
