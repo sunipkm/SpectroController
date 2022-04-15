@@ -163,6 +163,7 @@ int main()
 {
     signal(SIGINT, sighandler);
     signal(SIGHUP, sighuphandler);
+    signal(SIGTERM, sighuphandler);
     atexit(MotorCleanup);
     MotorSetup();
     std::string scan_save_loc = "";
